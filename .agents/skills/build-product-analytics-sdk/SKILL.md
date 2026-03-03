@@ -1,0 +1,425 @@
+---
+name: build-product-analytics-sdk
+description: Defines how to build an Altertable Product Analytics SDK client in any programming language. Use when implementing or maintaining a product analytics SDK, including identity management, event tracking, sessions, storage, consent, and auto-capture. Covers JS/TS, Python, Swift, Kotlin, Ruby, Java, Go, PHP, and Rust.
+---
+
+# Build Product Analytics SDK Skill
+
+## Quick Start
+
+1. **Modifying the existing JS/TS SDK?** Read the reference implementation below, then jump to the relevant phase.
+2. **Creating a new web framework wrapper** (React, Vue, Svelte, etc.)? Add it to the monorepo under `packages/`. Use `altertable-react` as a pattern.
+3. **Creating a new language SDK** (Python, Swift, etc.)? Start at Phase 1. Study the JS reference implementation for behavior parity.
+
+## Purpose
+
+Use this skill to implement a language-idiomatic, open-source client for the Altertable Product Analytics API.
+
+OpenAPI specification: https://api.altertable.ai/openapi/product-analytics.json
+
+Read this spec to manually define typed models and understand request/response schemas. Do not use OpenAPI codegen tools — define models by hand from the spec to keep them idiomatic and minimal.
+
+## Reference Implementation
+
+The canonical implementation is the JavaScript/TypeScript SDK in the [`altertable-js` monorepo](https://github.com/altertable-ai/altertable-js).
+
+Web framework SDKs (React, Vue, Svelte, etc.) belong in this monorepo under `packages/`, not in separate repositories.
+
+Key files:
+
+| File | Role |
+|------|------|
+| `.cursor/skills/product-analytics-client-sdk/sdk.config.ts` | **Typed SDK configuration** — all config interfaces, defaults, and internal constants. Single source of truth for values referenced throughout this skill. |
+| `packages/altertable-js/src/core.ts` | Main `Altertable` class — init, track, identify, alias, sessions, consent |
+| `packages/altertable-js/src/types.ts` | Payload types (`TrackPayload`, `IdentifyPayload`, `AliasPayload`) |
+| `packages/altertable-js/src/lib/requester.ts` | Transport — beacon/fetch, URL construction, timeout |
+| `packages/altertable-js/src/lib/sessionManager.ts` | Identity state, sessions, consent, device/anonymous/session IDs |
+| `packages/altertable-js/src/lib/storage.ts` | Storage abstraction (memory, cookie, localStorage, sessionStorage) |
+| `packages/altertable-js/src/constants.ts` | SDK constants (reserved IDs, default values, limits) |
+| `packages/altertable-js/src/lib/validateUserId.ts` | Reserved user ID validation |
+| `packages/altertable-js/src/lib/error.ts` | Error types and type guards |
+| `packages/altertable-js/src/lib/queue.ts` | Pre-init and consent queue |
+| `packages/altertable-js/src/lib/safelyRunOnBrowser.ts` | SSR-safe browser API access |
+| `packages/altertable-js/test/` | Test patterns (Vitest, custom matchers) |
+| `test-utils/` | Shared test helpers (`toRequestApi`, `toWarnDev`, storage mocks) |
+
+## Platform Tiers
+
+Feature expectations differ by where the SDK runs. Categorize the target language into a tier:
+
+| Tier | Languages | Key Expectations |
+|------|-----------|------------------|
+| **Web** | JS/TS | Sessions, auto-capture, storage (localStorage/cookie), beacon transport, tracking consent, pre-init queue |
+| **Mobile** | Swift, Kotlin | Sessions, device persistence (Keychain/SharedPrefs), background flush, app lifecycle hooks |
+| **Server** | Python, Ruby, Java, Go, PHP, Rust | Stateless per-request tracking, explicit IDs required, batch support, no sessions/storage/auto-capture |
+
+Use the tier to decide which phases below are required (marked per phase).
+
+## Required Outcomes
+
+1. Full endpoint coverage (`track`, `identify`, `alias`).
+2. Package is publishable to the target language's primary registry.
+3. Typed models and typed errors are first-class (best-effort for dynamic languages).
+4. Identity model handles anonymous → identified transitions correctly.
+5. Transport is extensible (timeouts, proxy, error hooks).
+6. Tests provide confidence in real runtime behavior.
+7. MIT license.
+
+## Input Contract
+
+Before implementation, collect or infer:
+
+- Target language/runtime/version
+- Package name and namespace
+- Platform tier (web / mobile / server)
+- CI target versions
+- Optional live-test credentials
+
+If not provided, choose ecosystem-standard defaults and document them.
+
+## Implementation Workflow
+
+### Phase 1: Scaffold
+
+**All tiers.**
+
+1. Create package scaffold with idiomatic structure.
+2. Add MIT license, README, changelog.
+3. Configure lint/typecheck/test/build scripts.
+4. For web tier: set up bundler (e.g. `tsup`); configure `__DEV__`, `__LIB__`, `__LIB_VERSION__` build-time constants.
+
+### Phase 2: Models and Serialization
+
+**All tiers.**
+
+Read the OpenAPI spec and manually define typed request/response models from it — do not use codegen tools. Preserve `oneOf` semantics (single payload or array) for batch support.
+
+SDKs should send ISO 8601 timestamps by default.
+
+### Phase 3: Client Core
+
+**All tiers.**
+
+Implement a configurable client constructor. The full typed config interfaces (`WebConfig`, `MobileConfig`, `ServerConfig`) and their default values (`WEB_DEFAULTS`, `MOBILE_DEFAULTS`, `SERVER_DEFAULTS`) are defined in [sdk.config.ts](sdk.config.ts). Use those types and defaults as-is.
+
+**Server tier**: no sessions, no storage, no auto-capture. The client is stateless. Identity fields (`distinct_id`, `anonymous_id`, `device_id`) are passed explicitly per call.
+
+### Phase 4: Identity Model
+
+**All tiers, but implementation differs.**
+
+The SDK manages three identity concepts:
+
+| ID | Format | Prefix constant | Purpose |
+|----|--------|-----------------|---------|
+| `device_id` | `{PREFIX_DEVICE_ID}-{uuid}` | `PREFIX_DEVICE_ID` | Stable device identifier, survives reset |
+| `distinct_id` | `{PREFIX_ANONYMOUS_ID}-{uuid}` or user-provided | `PREFIX_ANONYMOUS_ID` | Current identity (anonymous or identified) |
+| `anonymous_id` | `{PREFIX_ANONYMOUS_ID}-{uuid}` or `null` | `PREFIX_ANONYMOUS_ID` | Previous anonymous ID after `identify()` — enables backend identity merge |
+| `session_id` | `{PREFIX_SESSION_ID}-{uuid}` | `PREFIX_SESSION_ID` | Groups events within an activity window |
+
+See [sdk.config.ts](sdk.config.ts) for prefix values.
+
+#### State transitions
+
+1. **Fresh state**: `distinct_id = anonymous-{uuid}`, `anonymous_id = null`, `session_id = session-{uuid}`.
+2. **After `identify(userId)`**: `distinct_id = userId`, `anonymous_id = previous distinct_id`.
+3. **After `reset()`**: New `session_id`, new `anonymous-{uuid}` as `distinct_id`, `anonymous_id = null`. Device ID preserved unless `resetDeviceId: true`.
+4. **Re-identify with different user**: Auto-reset first, then identify.
+
+#### Reserved user IDs
+
+Reject IDs listed in `RESERVED_USER_IDS` (case-insensitive) and `RESERVED_USER_IDS_CASE_SENSITIVE` (case-sensitive). See [sdk.config.ts](sdk.config.ts) for the full lists.
+
+**Server tier**: No identity state. `distinct_id` and `anonymous_id` are explicit parameters on every call. Validate reserved IDs but don't manage transitions.
+
+### Phase 5: Session Management
+
+**Web and mobile tiers only.**
+
+- Session TTL: `SESSION_EXPIRATION_TIME_MS` (see [sdk.config.ts](sdk.config.ts)).
+- Renew session (new `session_id`) on first event after TTL expires.
+- Persist `lastEventAt` timestamp to detect expiry across page loads / app restarts.
+- `session_id` is attached to every `track` payload.
+
+### Phase 6: Storage and Persistence
+
+**Web and mobile tiers only.**
+
+#### Web tier
+
+Implement a `StorageApi` interface with `getItem`, `setItem`, `removeItem`, `migrate`.
+
+Backends (with automatic fallback chain):
+
+1. `localStorage+cookie` (default) — write to both, read from localStorage first
+2. `localStorage`
+3. `sessionStorage`
+4. `cookie`
+5. `memory` (final fallback)
+
+Test storage availability before use. Log warnings on fallback.
+
+Storage key format: `{STORAGE_KEY_PREFIX}{STORAGE_KEY_SEPARATOR}{apiKey}{STORAGE_KEY_SEPARATOR}{environment}` (see [sdk.config.ts](sdk.config.ts) for values).
+
+Support runtime storage migration when `persistence` config changes via `configure()`.
+
+#### Mobile tier
+
+Use platform-native secure storage (Keychain on iOS, EncryptedSharedPreferences on Android). Fallback to standard storage if unavailable.
+
+### Phase 7: Tracking Consent
+
+**Web and mobile tiers only.**
+
+Four states defined by the `TrackingConsentState` type (see [sdk.config.ts](sdk.config.ts)):
+
+| State | Behavior |
+|-------|----------|
+| `granted` | Send events immediately |
+| `pending` | Queue events, flush when consent becomes `granted` |
+| `dismissed` | Queue events (same as `pending`) |
+| `denied` | Drop events, clear queue |
+
+Consent is set at init via `trackingConsent` config and changeable at runtime via `configure({ trackingConsent })`. Persist consent state in storage.
+
+### Phase 8: Event Queue and Pre-Init Buffering
+
+**Web and mobile tiers only.**
+
+Two queuing scenarios:
+
+1. **Pre-init queue**: `track()`, `identify()`, `alias()`, `page()`, `updateTraits()` called before `init()`. Buffer as commands, replay on init.
+2. **Consent queue**: Events generated while consent is `pending`/`dismissed`. Buffer as fully-built payloads, flush when consent becomes `granted`.
+
+Queue capacity: `MAX_QUEUE_SIZE` (see [sdk.config.ts](sdk.config.ts)). Drop oldest on overflow with a warning.
+
+For pre-init `track`/`page` calls, capture runtime context (timestamp, URL, viewport, referrer) at call time, not at replay time.
+
+### Phase 9: Auto-Capture
+
+**Web tier only.**
+
+When `autoCapture: true`:
+
+1. Track initial pageview on init.
+2. Poll URL every `AUTO_CAPTURE_INTERVAL_MS` to detect SPA navigation (see [sdk.config.ts](sdk.config.ts)).
+3. Listen for `popstate` and `hashchange` events.
+4. On URL change: update referrer to previous URL, fire `EVENT_PAGEVIEW` event.
+
+`EVENT_PAGEVIEW` properties: `PROPERTY_URL`, `PROPERTY_VIEWPORT`, `PROPERTY_REFERER`, plus extracted URL search params (see [sdk.config.ts](sdk.config.ts) for constant values).
+
+`init()` returns a cleanup function that removes listeners and stops polling.
+
+`configure({ autoCapture })` toggles auto-capture at runtime.
+
+### Phase 10: Endpoint Methods
+
+**All tiers.**
+
+#### `track(event, properties)`
+
+- `POST /track`
+- Attach context: `environment`, `device_id`, `distinct_id`, `anonymous_id`, `session_id`, `timestamp`.
+- Merge system properties (`PROPERTY_LIB`, `PROPERTY_LIB_VERSION`, `PROPERTY_RELEASE`, `PROPERTY_URL`) with user properties. User properties win on conflict. See [sdk.config.ts](sdk.config.ts) for key values.
+- Renew session before sending (web/mobile).
+
+#### `identify(userId, traits)`
+
+- `POST /identify`
+- Transition identity state (web/mobile) or pass IDs explicitly (server).
+- Payload excludes `session_id`.
+
+#### `alias(newUserId)`
+
+- `POST /alias`
+- Links `distinct_id` → `new_user_id`.
+
+#### `page(url)` — web tier only
+
+- Fires `$pageview` track event with parsed URL properties.
+
+#### `updateTraits(traits)` — web/mobile tiers
+
+- Sends an identify call with new traits. Requires prior `identify()`.
+
+#### `reset(options)` — web/mobile tiers
+
+- Clears session, generates new anonymous identity.
+- `resetDeviceId: true` also regenerates device ID.
+- Clears the event queue.
+
+#### `configure(updates)` — web/mobile tiers
+
+- Updates config at runtime: `autoCapture`, `persistence`, `trackingConsent`.
+
+#### `getTrackingConsent()` — web/mobile tiers
+
+- Returns current consent state.
+
+### Request/Response Examples
+
+All endpoints accept JSON. Web tier sends the API key as a query param; server tier uses the `X-API-Key` header.
+
+#### `POST /track?apiKey=pk_live_abc123`
+
+```json
+{
+  "timestamp": "2025-06-15T14:30:00.000Z",
+  "event": "checkout_completed",
+  "environment": "production",
+  "device_id": "device-550e8400-e29b-41d4-a716-446655440000",
+  "distinct_id": "user-42",
+  "anonymous_id": "anonymous-7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "session_id": "session-a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "properties": {
+    "$lib": "altertable-js",
+    "$lib_version": "0.3.0",
+    "$url": "https://example.com/checkout",
+    "order_total": 99.99
+  }
+}
+```
+
+#### `POST /identify?apiKey=pk_live_abc123`
+
+No `session_id` in the payload.
+
+```json
+{
+  "environment": "production",
+  "device_id": "device-550e8400-e29b-41d4-a716-446655440000",
+  "distinct_id": "user-42",
+  "anonymous_id": "anonymous-7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "traits": {
+    "email": "user@example.com"
+  }
+}
+```
+
+#### `POST /alias?apiKey=pk_live_abc123`
+
+```json
+{
+  "environment": "production",
+  "device_id": "device-550e8400-e29b-41d4-a716-446655440000",
+  "distinct_id": "anonymous-7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "anonymous_id": null,
+  "new_user_id": "user-42"
+}
+```
+
+#### Error response (422)
+
+```json
+{
+  "error": "environment-not-found",
+  "message": "Environment 'staging' not found for this project.",
+  "details": {}
+}
+```
+
+### Phase 11: Transport
+
+**All tiers.**
+
+#### Web tier
+
+1. Prefer `navigator.sendBeacon` (fire-and-forget, survives page unload).
+2. Fallback to `fetch` with `keepalive: true`.
+3. Request timeout: `REQUEST_TIMEOUT_MS` (see [sdk.config.ts](sdk.config.ts)).
+4. API key sent as query param: `?apiKey={key}`.
+
+#### Mobile tier
+
+1. Use platform HTTP client (URLSession on iOS, OkHttp on Android).
+2. Support background flush on app backgrounding.
+3. Request timeout: `MOBILE_REQUEST_TIMEOUT_MS` (see [sdk.config.ts](sdk.config.ts)).
+
+#### Server tier
+
+1. Use ecosystem-standard HTTP client.
+2. Support configurable timeouts and retry policy with exponential backoff + jitter.
+3. API key sent via `X-API-Key` header.
+4. Support batch payloads natively.
+
+### Phase 12: Error Model
+
+**All tiers.**
+
+Implement typed errors:
+
+- `AltertableError` — base class
+- `ApiError` — HTTP error with `status`, `statusText`, `errorCode`, `details`, request context
+- `NetworkError` — connection/timeout failures with `cause`
+
+Type guards: `isAltertableError()`, `isApiError()`, `isNetworkError()`.
+
+`onError` config callback receives SDK errors. Never let SDK errors crash the host application.
+
+Handle `environment-not-found` error specifically: log a warning with a link to the dashboard.
+
+### Phase 13: Testing
+
+**All tiers.**
+
+#### Unit tests
+
+- Model serialization round-trips
+- Identity state transitions (anonymous → identified → reset → re-identify)
+- Reserved user ID validation
+- Pre-init queue replay (web/mobile)
+- Consent state machine (granted/denied/pending/dismissed)
+- Session renewal logic
+- Storage backends and fallback chain (web)
+- Auto-capture URL change detection (web)
+- Transport selection (beacon vs fetch) (web)
+- Request construction and URL encoding
+- Error handling and `onError` callback
+- Queue overflow behavior
+
+#### Integration tests (opt-in)
+
+- Run when credentials/env present.
+- One real `track`, one `identify`, one `alias` against live API.
+- Verify response shape and error codes.
+
+### Phase 14: Packaging and Release
+
+Follow the [SDK Packaging & Release](../sdk-packaging-release/SKILL.md) skill for versioning, naming, changelog, CI/CD, and registry publishing conventions.
+
+Additionally for this SDK:
+1. README must include examples for all endpoints (`track`, `identify`, `alias`, `page`).
+2. For web: export `TrackingConsent` constants for consumer use.
+
+## Acceptance Checklist
+
+- [ ] `track`, `identify`, `alias` endpoints implemented
+- [ ] Identity model (anonymous → identified → alias → reset) correct per tier
+- [ ] Session management works with TTL renewal (web/mobile)
+- [ ] Storage persistence with fallback chain (web/mobile)
+- [ ] Tracking consent state machine (web/mobile)
+- [ ] Pre-init queue with runtime context capture (web/mobile)
+- [ ] Auto-capture with cleanup (web)
+- [ ] Typed errors with `onError` hook
+- [ ] Reserved user ID validation
+- [ ] Tests cover all tier-relevant behavior
+- [ ] Package is publish-ready
+- [ ] MIT license and docs present
+
+## When Things Go Wrong
+
+### OpenAPI spec unavailable
+
+If the spec at `https://api.altertable.ai/openapi/product-analytics.json` cannot be fetched (timeout, 404, etc.), use the reference JS implementation's types as the source of truth for models. Document which spec version you based the models on.
+
+### Missing platform APIs
+
+Some platforms lack certain APIs (e.g., `crypto.randomUUID` in older runtimes, `navigator.sendBeacon` in non-browser environments). Always provide a polyfill or fallback:
+
+- **UUID generation**: Fall back to a manual v4 UUID implementation using `crypto.getRandomValues` or equivalent.
+- **Beacon transport**: Fall back to `fetch` with `keepalive: true`, then plain `fetch`.
+- **Storage APIs**: Follow the fallback chain defined in Phase 6. If all backends fail, use in-memory storage.
+
+### Tests cannot run
+
+If a test phase is blocked (e.g., missing native dependencies, no live credentials for integration tests), skip with a clear `TODO` and a logged warning — do not silently omit test coverage. Document what is skipped and why in the PR description.

@@ -1,10 +1,9 @@
 ---
-name: lakehouse-client-sdk
+name: build-lakehouse-client-sdk
 description: Defines how to build and publish a production-grade open-source Altertable Lakehouse API client in any programming language. Use when implementing or maintaining a Lakehouse SDK from the OpenAPI spec, including typed models, streaming query parsing, auth, retries, and release workflows.
-license: MIT
 ---
 
-# Lakehouse Client SDK Skill
+# Build Lakehouse Client SDK Skill
 
 ## Purpose
 
