@@ -155,11 +155,25 @@ Requirements:
 
 ### Phase 6: Authentication
 
-Support all common, non-surprising patterns:
+The Altertable Lakehouse API uses standard HTTP Basic Auth. Credentials are sent in every request as:
 
-1. Direct credentials in client config
-2. Environment variable discovery
-3. Optional per-request override
+```
+Authorization: Basic <base64(username:password)>
+```
+
+The client must support all of the following credential input patterns:
+
+1. **Direct credentials** — `username` + `password` accepted in the client constructor/config; the SDK encodes them into the Basic token internally.
+2. **Pre-encoded token** — accept a raw pre-encoded `Basic` token string directly for callers who already hold the encoded value.
+3. **Environment variable discovery** — auto-discover from the environment:
+   - `ALTERTABLE_USERNAME` + `ALTERTABLE_PASSWORD` (encode on the fly), or
+   - `ALTERTABLE_BASIC_AUTH_TOKEN` (use directly as the pre-encoded value)
+4. **Optional per-request override** — allow passing alternative credentials/token on individual method calls.
+
+Implementation requirements:
+
+- Credentials must never appear in logs, error messages, or debug output.
+- A `ConfigurationError` must be raised at construction time when no credentials can be resolved.
 
 ### Phase 7: Error Model
 
