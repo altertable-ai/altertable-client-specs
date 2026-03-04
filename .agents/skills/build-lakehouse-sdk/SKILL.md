@@ -13,13 +13,12 @@ Primary OpenAPI specification reference: `https://api.altertable.ai/openapi/lake
 
 ## Required Outcomes
 
-1. Full endpoint coverage (`append`, `query`, `upload`, `validate`).
+1. Full endpoint coverage (`append`, `query` (streamed and accumulated), `query/:query_id` GET/DELETE, `upload`, `validate`).
 2. Package is publishable to the target language's primary registry.
 3. Typed models and typed errors are first-class.
-4. `/query` exposes parsed streaming output by default.
-5. Transport is extensible (timeouts, retries, proxy, middleware/hooks).
-6. Tests provide confidence in real runtime behavior.
-7. Project is modern OSS with MIT licensing.
+4. `/query` exposes both streamed (with metadata, columns, and row iterator) and accumulated (with all rows) versions.
+5. Tests provide confidence in real runtime behavior.
+6. Project is modern OSS with MIT licensing.
 
 ## Input Contract
 
@@ -63,8 +62,6 @@ Implement a configurable client constructor/factory with:
 - auth options (see Authentication)
 - timeout configuration
 - retry policy
-- custom HTTP transport/adapter
-- middleware/interceptor hooks
 - optional user-agent suffix
 
 ### Phase 4: Endpoint Methods
@@ -80,10 +77,27 @@ Implement typed methods for all operations:
 
 2. `query`
 
+   Two versions must be provided:
+
+   a. `query` (streamed)
+
    - `POST /query`
    - JSON body: `QueryRequest` (must include `statement`)
    - content type: `application/x-ndjson`
-   - returns parsed stream interface (iterator/async iterator/observable/channel)
+   - returns a structured result containing:
+     - metadata
+     - columns
+     - an enumerator/iterator/async iterator/observable/channel to iterate over streamed rows
+
+   b. `queryAll` (or `query_all`, accumulated)
+
+   - `POST /query`
+   - JSON body: `QueryRequest` (must include `statement`)
+   - accumulates all rows from the stream before returning
+   - returns a structured result containing:
+     - metadata
+     - columns
+     - all rows as an array/list/collection
 
 3. `upload`
 
@@ -92,30 +106,44 @@ Implement typed methods for all operations:
    - conditional param: `primary_key` is required when `mode=upsert`
    - body: `application/octet-stream` bytes or stream
 
-4. `validate`
+4. `getQuery` (or `get_query`)
+
+   - `GET /query/{query_id}`
+   - path param: `query_id` (UUID)
+   - typed response: `QueryLogResponse`
+   - returns query log information including stats, progress, duration, error
+
+5. `cancelQuery` (or `cancel_query`)
+
+   - `DELETE /query/{query_id}`
+   - path param: `query_id` (UUID)
+   - required query param: `session_id`
+   - typed response: `CancelQueryResponse`
+   - cancels a running query
+
+6. `validate`
    - `POST /validate`
    - JSON body: `ValidateRequest` (must include `statement`)
    - typed response: `ValidateResponse`
 
 ### Phase 5: Streaming Contract (`query`)
 
-Default behavior must parse NDJSON lines into typed events.
+The streamed `query` method must parse the NDJSON response and return a structured result with:
 
-Recommended event types:
+1. **metadata** - Query metadata (parsed from initial metadata line)
+2. **columns** - Column schema information (parsed when schema row appears)
+3. **rows iterator** - An enumerator/iterator/async iterator/observable/channel to iterate over streamed rows
 
-- `metadata`
-- `columns` (when schema row appears)
-- `row`
-- `done` (if representable in runtime)
-- `stream_error`
+The accumulated `queryAll` method should:
+
+- Call `query` with the same request and accumulate the rows into a single array/list/collection
+- Return metadata, columns, and all rows
 
 Requirements:
 
 - Include line index/context in parsing failures.
 - Never silently ignore malformed lines.
-- Support cancellation and resource cleanup.
-- Preserve backpressure semantics of the language runtime.
-- Optionally expose raw-line access for advanced consumers.
+- Preserve backpressure semantics of the language runtime (for streamed version).
 
 ### Phase 6: Authentication
 
@@ -123,14 +151,7 @@ Support all common, non-surprising patterns:
 
 1. Direct credentials in client config
 2. Environment variable discovery
-3. Credential provider callback/interface (for rotation)
-4. Optional per-request override
-
-Security rules:
-
-- Never log raw credentials.
-- Redact authorization headers.
-- Document auth precedence rules.
+3. Optional per-request override
 
 ### Phase 7: Error Model
 
@@ -156,16 +177,7 @@ All errors should include, when available:
 
 ### Phase 8: Transport and Reliability
 
-Must support:
-
-- pluggable transport
-- global and per-request timeouts
-- retry policy with exponential backoff + jitter
-- configurable retriable conditions
-- proxy support
-- middleware/hooks for logging and tracing
-
-Prefer ecosystem-standard HTTP stack and retry primitives.
+**For HTTP client performance best practices**, including keep-alive, timeout defaults, and language-specific HTTP client recommendations, read and follow the [Build HTTP SDK Skill](../build-http-sdk/SKILL.md).
 
 ### Phase 9: Testing
 
@@ -181,7 +193,7 @@ Implement layered tests:
 
 2. Integration tests (opt-in)
    - run only when credentials/env are present
-   - do one real `explain`, one `query` stream, one `upload`, and one `validate` against the live API
+   - do one real `query` stream, one `queryAll` to fetch all rows, one `getQuery` to fetch log, one `cancelQuery` to cancel, one `upload`, and one `validate` against the live API
 
 CI should always run lint + typecheck + unit + contract tests.
 
@@ -215,6 +227,21 @@ CI should always run lint + typecheck + unit + contract tests.
 - Constraint: `primary_key` required for `mode=upsert`
 - Body: binary file content
 
+### `GET /query/{query_id}`
+
+- Path: `query_id` (UUID)
+- Response: `QueryLogResponse` containing query log information
+- Returns: query metadata including `uuid`, `start_time`, `end_time`, `duration_ms`, `query`, `session_id`, `client_interface`, `error`, `stats` (with `caching`, `memory`, `scan`), `progress`, `visible`, `requested_by`, `user_agent`
+- Status codes: 200 (success), 401 (auth required), 404 (query not found)
+
+### `DELETE /query/{query_id}`
+
+- Path: `query_id` (UUID)
+- Query: `session_id` (required)
+- Response: `CancelQueryResponse` with `cancelled` (boolean) and `message` (string)
+- Status codes: 200 (success), 400 (invalid request), 401 (auth required), 404 (session not found)
+- Cancels a running query associated with the given session
+
 ### `POST /validate`
 
 - Body: `ValidateRequest` with required `statement`
@@ -224,8 +251,8 @@ CI should always run lint + typecheck + unit + contract tests.
 
 Only mark implementation complete when all are true:
 
-- [ ] All 4 endpoints implemented and documented
-- [ ] Streaming parser returns typed events
+- [ ] All 6 endpoints implemented and documented (`append`, `query` (streamed and accumulated), `getQuery`, `cancelQuery`, `upload`, `validate`)
+- [ ] Streamed `query` returns metadata, columns, and row iterator; accumulated `queryAll` returns metadata, columns, and all rows
 - [ ] Typed errors are comprehensive and actionable
 - [ ] Auth supports direct/env/provider patterns
 - [ ] Retries/timeouts/transport hooks are configurable

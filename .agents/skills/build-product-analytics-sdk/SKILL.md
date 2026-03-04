@@ -27,31 +27,31 @@ Web framework SDKs (React, Vue, Svelte, etc.) belong in this monorepo under `pac
 
 Key files:
 
-| File | Role |
-|------|------|
+| File                                                        | Role                                                                                                                                                       |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `.cursor/skills/product-analytics-client-sdk/sdk.config.ts` | **Typed SDK configuration** — all config interfaces, defaults, and internal constants. Single source of truth for values referenced throughout this skill. |
-| `packages/altertable-js/src/core.ts` | Main `Altertable` class — init, track, identify, alias, sessions, consent |
-| `packages/altertable-js/src/types.ts` | Payload types (`TrackPayload`, `IdentifyPayload`, `AliasPayload`) |
-| `packages/altertable-js/src/lib/requester.ts` | Transport — beacon/fetch, URL construction, timeout |
-| `packages/altertable-js/src/lib/sessionManager.ts` | Identity state, sessions, consent, device/anonymous/session IDs |
-| `packages/altertable-js/src/lib/storage.ts` | Storage abstraction (memory, cookie, localStorage, sessionStorage) |
-| `packages/altertable-js/src/constants.ts` | SDK constants (reserved IDs, default values, limits) |
-| `packages/altertable-js/src/lib/validateUserId.ts` | Reserved user ID validation |
-| `packages/altertable-js/src/lib/error.ts` | Error types and type guards |
-| `packages/altertable-js/src/lib/queue.ts` | Pre-init and consent queue |
-| `packages/altertable-js/src/lib/safelyRunOnBrowser.ts` | SSR-safe browser API access |
-| `packages/altertable-js/test/` | Test patterns (Vitest, custom matchers) |
-| `test-utils/` | Shared test helpers (`toRequestApi`, `toWarnDev`, storage mocks) |
+| `packages/altertable-js/src/core.ts`                        | Main `Altertable` class — init, track, identify, alias, sessions, consent                                                                                  |
+| `packages/altertable-js/src/types.ts`                       | Payload types (`TrackPayload`, `IdentifyPayload`, `AliasPayload`)                                                                                          |
+| `packages/altertable-js/src/lib/requester.ts`               | Transport — beacon/fetch, URL construction, timeout                                                                                                        |
+| `packages/altertable-js/src/lib/sessionManager.ts`          | Identity state, sessions, consent, device/anonymous/session IDs                                                                                            |
+| `packages/altertable-js/src/lib/storage.ts`                 | Storage abstraction (memory, cookie, localStorage, sessionStorage)                                                                                         |
+| `packages/altertable-js/src/constants.ts`                   | SDK constants (reserved IDs, default values, limits)                                                                                                       |
+| `packages/altertable-js/src/lib/validateUserId.ts`          | Reserved user ID validation                                                                                                                                |
+| `packages/altertable-js/src/lib/error.ts`                   | Error types and type guards                                                                                                                                |
+| `packages/altertable-js/src/lib/queue.ts`                   | Pre-init and consent queue                                                                                                                                 |
+| `packages/altertable-js/src/lib/safelyRunOnBrowser.ts`      | SSR-safe browser API access                                                                                                                                |
+| `packages/altertable-js/test/`                              | Test patterns (Vitest, custom matchers)                                                                                                                    |
+| `test-utils/`                                               | Shared test helpers (`toRequestApi`, `toWarnDev`, storage mocks)                                                                                           |
 
 ## Platform Tiers
 
 Feature expectations differ by where the SDK runs. Categorize the target language into a tier:
 
-| Tier | Languages | Key Expectations |
-|------|-----------|------------------|
-| **Web** | JS/TS | Sessions, auto-capture, storage (localStorage/cookie), beacon transport, tracking consent, pre-init queue |
-| **Mobile** | Swift, Kotlin | Sessions, device persistence (Keychain/SharedPrefs), background flush, app lifecycle hooks |
-| **Server** | Python, Ruby, Java, Go, PHP, Rust | Stateless per-request tracking, explicit IDs required, batch support, no sessions/storage/auto-capture |
+| Tier       | Languages                         | Key Expectations                                                                                          |
+| ---------- | --------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Web**    | JS/TS                             | Sessions, auto-capture, storage (localStorage/cookie), beacon transport, tracking consent, pre-init queue |
+| **Mobile** | Swift, Kotlin                     | Sessions, device persistence (Keychain/SharedPrefs), background flush, app lifecycle hooks                |
+| **Server** | Python, Ruby, Java, Go, PHP, Rust | Stateless per-request tracking, explicit IDs required, batch support, no sessions/storage/auto-capture    |
 
 Use the tier to decide which phases below are required (marked per phase).
 
@@ -110,12 +110,12 @@ Implement a configurable client constructor. The full typed config interfaces (`
 
 The SDK manages three identity concepts:
 
-| ID | Format | Prefix constant | Purpose |
-|----|--------|-----------------|---------|
-| `device_id` | `{PREFIX_DEVICE_ID}-{uuid}` | `PREFIX_DEVICE_ID` | Stable device identifier, survives reset |
-| `distinct_id` | `{PREFIX_ANONYMOUS_ID}-{uuid}` or user-provided | `PREFIX_ANONYMOUS_ID` | Current identity (anonymous or identified) |
-| `anonymous_id` | `{PREFIX_ANONYMOUS_ID}-{uuid}` or `null` | `PREFIX_ANONYMOUS_ID` | Previous anonymous ID after `identify()` — enables backend identity merge |
-| `session_id` | `{PREFIX_SESSION_ID}-{uuid}` | `PREFIX_SESSION_ID` | Groups events within an activity window |
+| ID             | Format                                          | Prefix constant       | Purpose                                                                   |
+| -------------- | ----------------------------------------------- | --------------------- | ------------------------------------------------------------------------- |
+| `device_id`    | `{PREFIX_DEVICE_ID}-{uuid}`                     | `PREFIX_DEVICE_ID`    | Stable device identifier, survives reset                                  |
+| `distinct_id`  | `{PREFIX_ANONYMOUS_ID}-{uuid}` or user-provided | `PREFIX_ANONYMOUS_ID` | Current identity (anonymous or identified)                                |
+| `anonymous_id` | `{PREFIX_ANONYMOUS_ID}-{uuid}` or `null`        | `PREFIX_ANONYMOUS_ID` | Previous anonymous ID after `identify()` — enables backend identity merge |
+| `session_id`   | `{PREFIX_SESSION_ID}-{uuid}`                    | `PREFIX_SESSION_ID`   | Groups events within an activity window                                   |
 
 See [sdk.config.ts](sdk.config.ts) for prefix values.
 
@@ -173,12 +173,12 @@ Use platform-native secure storage (Keychain on iOS, EncryptedSharedPreferences 
 
 Four states defined by the `TrackingConsentState` type (see [sdk.config.ts](sdk.config.ts)):
 
-| State | Behavior |
-|-------|----------|
-| `granted` | Send events immediately |
-| `pending` | Queue events, flush when consent becomes `granted` |
-| `dismissed` | Queue events (same as `pending`) |
-| `denied` | Drop events, clear queue |
+| State       | Behavior                                           |
+| ----------- | -------------------------------------------------- |
+| `granted`   | Send events immediately                            |
+| `pending`   | Queue events, flush when consent becomes `granted` |
+| `dismissed` | Queue events (same as `pending`)                   |
+| `denied`    | Drop events, clear queue                           |
 
 Consent is set at init via `trackingConsent` config and changeable at runtime via `configure({ trackingConsent })`. Persist consent state in storage.
 
@@ -322,6 +322,8 @@ No `session_id` in the payload.
 
 **All tiers.**
 
+**For HTTP client performance best practices**, including keep-alive, timeout defaults, and language-specific HTTP client recommendations, read and follow the [Build HTTP SDK Skill](../build-http-sdk/SKILL.md).
+
 #### Web tier
 
 1. Prefer `navigator.sendBeacon` (fire-and-forget, survives page unload).
@@ -331,16 +333,13 @@ No `session_id` in the payload.
 
 #### Mobile tier
 
-1. Use platform HTTP client (URLSession on iOS, OkHttp on Android).
-2. Support background flush on app backgrounding.
-3. Request timeout: `MOBILE_REQUEST_TIMEOUT_MS` (see [sdk.config.ts](sdk.config.ts)).
+1. Support background flush on app backgrounding.
+2. Request timeout: `MOBILE_REQUEST_TIMEOUT_MS` (see [sdk.config.ts](sdk.config.ts)).
 
 #### Server tier
 
-1. Use ecosystem-standard HTTP client.
-2. Support configurable timeouts and retry policy with exponential backoff + jitter.
-3. API key sent via `X-API-Key` header.
-4. Support batch payloads natively.
+1. API key sent via `X-API-Key` header.
+2. Support batch payloads natively.
 
 ### Phase 12: Error Model
 
@@ -388,6 +387,7 @@ Handle `environment-not-found` error specifically: log a warning with a link to 
 Follow the [SDK Packaging & Release](../sdk-packaging-release/SKILL.md) skill for versioning, naming, changelog, CI/CD, and registry publishing conventions.
 
 Additionally for this SDK:
+
 1. README must include examples for all endpoints (`track`, `identify`, `alias`, `page`).
 2. For web: export `TrackingConsent` constants for consumer use.
 
