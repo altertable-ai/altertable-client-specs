@@ -1,6 +1,6 @@
 ---
-name: build-lakehouse-client-sdk
-description: Defines how to build and publish a production-grade open-source Altertable Lakehouse API client in any programming language. Use when implementing or maintaining a Lakehouse SDK from the OpenAPI spec, including typed models, streaming query parsing, auth, retries, and release workflows.
+name: build-lakehouse-sdk
+description: Defines how to build a production-grade open-source Altertable Lakehouse API client in any programming language. Use when implementing or maintaining a Lakehouse SDK from the OpenAPI spec, including typed models, streaming query parsing, auth, and retries.
 ---
 
 # Build Lakehouse Client SDK Skill
@@ -10,6 +10,14 @@ description: Defines how to build and publish a production-grade open-source Alt
 Use this skill to implement a language-idiomatic, strongly typed (or as strongly typed as idiomatic for the target language—best effort for dynamic or scripting languages), open-source client for the Altertable Lakehouse API.
 
 Primary OpenAPI specification reference: `https://api.altertable.ai/openapi/lakehouse.json`
+
+## Repo Setup
+
+**Before starting implementation:**
+
+- **If initializing a new SDK repo or updating to a new spec version**: Use [`bootstrap-sdk`](../bootstrap-sdk/SKILL.md) first to fork the target repository, clone it, set up/update the `specs` submodule, and create a branch. Then return here to continue with the implementation phases below.
+
+- **If already working inside an existing repo checkout**: Skip to [Implementation Workflow](#implementation-workflow) and proceed with the phases.
 
 ## Required Outcomes
 
@@ -199,11 +207,12 @@ CI should always run lint + typecheck + unit + contract tests.
 
 ### Phase 10: Packaging and Release
 
-1. Use semantic versioning.
-2. Publish to primary registry for the language.
-3. Implement a release-please GitHub Action to automate the release process (incl. changelog generation and release notes).
-4. Include examples for all endpoints in the README.
-5. Verify docs match runtime behavior.
+Follow the [release-sdk](../release-sdk/SKILL.md) skill for versioning, naming, changelog format, CI/CD, and registry publishing conventions.
+
+Additionally for this SDK:
+
+1. Include examples for all endpoints (`append`, `query`, `queryAll`, `getQuery`, `cancelQuery`, `upload`, `validate`) in the README.
+2. Verify docs match runtime behavior.
 
 ## Endpoint Reference (Minimal)
 
@@ -260,12 +269,16 @@ Only mark implementation complete when all are true:
 - [ ] Package is publish-ready for primary registry
 - [ ] MIT license and OSS docs are present
 
-## Output Format for Implementation Agent
+## When Things Go Wrong
 
-When executing this skill, produce:
+### OpenAPI spec unavailable
 
-1. Short implementation plan
-2. File-by-file change list
-3. Test results summary
-4. Publish readiness checklist
-5. Known limitations and follow-up items
+If the spec at `https://api.altertable.ai/openapi/lakehouse.json` cannot be fetched (timeout, 404, etc.), use the endpoint reference in this skill as the source of truth for models. Document which spec version you based the models on.
+
+### Streaming parse failures
+
+If NDJSON streaming produces unexpected line formats, fail loudly with line index and raw content in the error. Never silently drop rows.
+
+### Tests cannot run
+
+If a test phase is blocked (e.g., missing native dependencies, no live credentials for integration tests), skip with a clear `TODO` and a logged warning — do not silently omit test coverage. Document what is skipped and why in the PR description.

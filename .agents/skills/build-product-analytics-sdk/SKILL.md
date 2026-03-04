@@ -19,6 +19,14 @@ OpenAPI specification: https://api.altertable.ai/openapi/product-analytics.json
 
 Read this spec to manually define typed models and understand request/response schemas. Do not use OpenAPI codegen tools — define models by hand from the spec to keep them idiomatic and minimal.
 
+## Repo Setup
+
+**Before starting implementation:**
+
+- **If initializing a new SDK repo or updating to a new spec version**: Use [`bootstrap-sdk`](../bootstrap-sdk/SKILL.md) first to fork the target repository, clone it, set up/update the `specs` submodule, and create a branch. Then return here to continue with the implementation phases below.
+
+- **If already working inside an existing repo checkout**: Skip to [Implementation Workflow](#implementation-workflow) and proceed with the phases.
+
 ## Reference Implementation
 
 The canonical implementation is the JavaScript/TypeScript SDK in the [`altertable-js` monorepo](https://github.com/altertable-ai/altertable-js).
@@ -29,7 +37,7 @@ Key files:
 
 | File                                                        | Role                                                                                                                                                       |
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.cursor/skills/product-analytics-client-sdk/sdk.config.ts` | **Typed SDK configuration** — all config interfaces, defaults, and internal constants. Single source of truth for values referenced throughout this skill. |
+| `sdk-constants.md` (this skill folder)                       | **SDK constants reference** — all config interfaces, defaults, and internal constants. Single source of truth for values referenced throughout this skill. |
 | `packages/altertable-js/src/core.ts`                        | Main `Altertable` class — init, track, identify, alias, sessions, consent                                                                                  |
 | `packages/altertable-js/src/types.ts`                       | Payload types (`TrackPayload`, `IdentifyPayload`, `AliasPayload`)                                                                                          |
 | `packages/altertable-js/src/lib/requester.ts`               | Transport — beacon/fetch, URL construction, timeout                                                                                                        |
@@ -100,7 +108,7 @@ SDKs should send ISO 8601 timestamps by default.
 
 **All tiers.**
 
-Implement a configurable client constructor. The full typed config interfaces (`WebConfig`, `MobileConfig`, `ServerConfig`) and their default values (`WEB_DEFAULTS`, `MOBILE_DEFAULTS`, `SERVER_DEFAULTS`) are defined in [sdk.config.ts](sdk.config.ts). Use those types and defaults as-is.
+Implement a configurable client constructor. The full typed config interfaces (`WebConfig`, `MobileConfig`, `ServerConfig`) and their default values (`WEB_DEFAULTS`, `MOBILE_DEFAULTS`, `SERVER_DEFAULTS`) are defined in [sdk-constants.md](sdk-constants.md). Use those types and defaults as-is.
 
 **Server tier**: no sessions, no storage, no auto-capture. The client is stateless. Identity fields (`distinct_id`, `anonymous_id`, `device_id`) are passed explicitly per call.
 
@@ -117,7 +125,7 @@ The SDK manages three identity concepts:
 | `anonymous_id` | `{PREFIX_ANONYMOUS_ID}-{uuid}` or `null`        | `PREFIX_ANONYMOUS_ID` | Previous anonymous ID after `identify()` — enables backend identity merge |
 | `session_id`   | `{PREFIX_SESSION_ID}-{uuid}`                    | `PREFIX_SESSION_ID`   | Groups events within an activity window                                   |
 
-See [sdk.config.ts](sdk.config.ts) for prefix values.
+See [sdk-constants.md](sdk-constants.md) for prefix values.
 
 #### State transitions
 
@@ -128,7 +136,7 @@ See [sdk.config.ts](sdk.config.ts) for prefix values.
 
 #### Reserved user IDs
 
-Reject IDs listed in `RESERVED_USER_IDS` (case-insensitive) and `RESERVED_USER_IDS_CASE_SENSITIVE` (case-sensitive). See [sdk.config.ts](sdk.config.ts) for the full lists.
+Reject IDs listed in `RESERVED_USER_IDS` (case-insensitive) and `RESERVED_USER_IDS_CASE_SENSITIVE` (case-sensitive). See [sdk-constants.md](sdk-constants.md) for the full lists.
 
 **Server tier**: No identity state. `distinct_id` and `anonymous_id` are explicit parameters on every call. Validate reserved IDs but don't manage transitions.
 
@@ -136,7 +144,7 @@ Reject IDs listed in `RESERVED_USER_IDS` (case-insensitive) and `RESERVED_USER_I
 
 **Web and mobile tiers only.**
 
-- Session TTL: `SESSION_EXPIRATION_TIME_MS` (see [sdk.config.ts](sdk.config.ts)).
+- Session TTL: `SESSION_EXPIRATION_TIME_MS` (see [sdk-constants.md](sdk-constants.md)).
 - Renew session (new `session_id`) on first event after TTL expires.
 - Persist `lastEventAt` timestamp to detect expiry across page loads / app restarts.
 - `session_id` is attached to every `track` payload.
@@ -159,7 +167,7 @@ Backends (with automatic fallback chain):
 
 Test storage availability before use. Log warnings on fallback.
 
-Storage key format: `{STORAGE_KEY_PREFIX}{STORAGE_KEY_SEPARATOR}{apiKey}{STORAGE_KEY_SEPARATOR}{environment}` (see [sdk.config.ts](sdk.config.ts) for values).
+Storage key format: `{STORAGE_KEY_PREFIX}{STORAGE_KEY_SEPARATOR}{apiKey}{STORAGE_KEY_SEPARATOR}{environment}` (see [sdk-constants.md](sdk-constants.md) for values).
 
 Support runtime storage migration when `persistence` config changes via `configure()`.
 
@@ -171,7 +179,7 @@ Use platform-native secure storage (Keychain on iOS, EncryptedSharedPreferences 
 
 **Web and mobile tiers only.**
 
-Four states defined by the `TrackingConsentState` type (see [sdk.config.ts](sdk.config.ts)):
+Four states defined by the `TrackingConsentState` type (see [sdk-constants.md](sdk-constants.md)):
 
 | State       | Behavior                                           |
 | ----------- | -------------------------------------------------- |
@@ -191,7 +199,7 @@ Two queuing scenarios:
 1. **Pre-init queue**: `track()`, `identify()`, `alias()`, `page()`, `updateTraits()` called before `init()`. Buffer as commands, replay on init.
 2. **Consent queue**: Events generated while consent is `pending`/`dismissed`. Buffer as fully-built payloads, flush when consent becomes `granted`.
 
-Queue capacity: `MAX_QUEUE_SIZE` (see [sdk.config.ts](sdk.config.ts)). Drop oldest on overflow with a warning.
+Queue capacity: `MAX_QUEUE_SIZE` (see [sdk-constants.md](sdk-constants.md)). Drop oldest on overflow with a warning.
 
 For pre-init `track`/`page` calls, capture runtime context (timestamp, URL, viewport, referrer) at call time, not at replay time.
 
@@ -202,11 +210,11 @@ For pre-init `track`/`page` calls, capture runtime context (timestamp, URL, view
 When `autoCapture: true`:
 
 1. Track initial pageview on init.
-2. Poll URL every `AUTO_CAPTURE_INTERVAL_MS` to detect SPA navigation (see [sdk.config.ts](sdk.config.ts)).
+2. Poll URL every `AUTO_CAPTURE_INTERVAL_MS` to detect SPA navigation (see [sdk-constants.md](sdk-constants.md)).
 3. Listen for `popstate` and `hashchange` events.
 4. On URL change: update referrer to previous URL, fire `EVENT_PAGEVIEW` event.
 
-`EVENT_PAGEVIEW` properties: `PROPERTY_URL`, `PROPERTY_VIEWPORT`, `PROPERTY_REFERER`, plus extracted URL search params (see [sdk.config.ts](sdk.config.ts) for constant values).
+`EVENT_PAGEVIEW` properties: `PROPERTY_URL`, `PROPERTY_VIEWPORT`, `PROPERTY_REFERER`, plus extracted URL search params (see [sdk-constants.md](sdk-constants.md) for constant values).
 
 `init()` returns a cleanup function that removes listeners and stops polling.
 
@@ -220,7 +228,7 @@ When `autoCapture: true`:
 
 - `POST /track`
 - Attach context: `environment`, `device_id`, `distinct_id`, `anonymous_id`, `session_id`, `timestamp`.
-- Merge system properties (`PROPERTY_LIB`, `PROPERTY_LIB_VERSION`, `PROPERTY_RELEASE`, `PROPERTY_URL`) with user properties. User properties win on conflict. See [sdk.config.ts](sdk.config.ts) for key values.
+- Merge system properties (`PROPERTY_LIB`, `PROPERTY_LIB_VERSION`, `PROPERTY_RELEASE`, `PROPERTY_URL`) with user properties. User properties win on conflict. See [sdk-constants.md](sdk-constants.md) for key values.
 - Renew session before sending (web/mobile).
 
 #### `identify(userId, traits)`
@@ -328,13 +336,13 @@ No `session_id` in the payload.
 
 1. Prefer `navigator.sendBeacon` (fire-and-forget, survives page unload).
 2. Fallback to `fetch` with `keepalive: true`.
-3. Request timeout: `REQUEST_TIMEOUT_MS` (see [sdk.config.ts](sdk.config.ts)).
+3. Request timeout: `REQUEST_TIMEOUT_MS` (see [sdk-constants.md](sdk-constants.md)).
 4. API key sent as query param: `?apiKey={key}`.
 
 #### Mobile tier
 
 1. Support background flush on app backgrounding.
-2. Request timeout: `MOBILE_REQUEST_TIMEOUT_MS` (see [sdk.config.ts](sdk.config.ts)).
+2. Request timeout: `MOBILE_REQUEST_TIMEOUT_MS` (see [sdk-constants.md](sdk-constants.md)).
 
 #### Server tier
 
@@ -384,12 +392,12 @@ Handle `environment-not-found` error specifically: log a warning with a link to 
 
 ### Phase 14: Packaging and Release
 
-Follow the [SDK Packaging & Release](../sdk-packaging-release/SKILL.md) skill for versioning, naming, changelog, CI/CD, and registry publishing conventions.
+Follow the [release-sdk](../release-sdk/SKILL.md) skill for versioning, naming, changelog format, CI/CD, and registry publishing conventions.
 
 Additionally for this SDK:
 
 1. README must include examples for all endpoints (`track`, `identify`, `alias`, `page`).
-2. For web: export `TrackingConsent` constants for consumer use.
+2. For web tier: export `TrackingConsent` constants for consumer use.
 
 ## Acceptance Checklist
 

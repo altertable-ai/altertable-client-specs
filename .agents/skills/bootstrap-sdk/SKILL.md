@@ -9,6 +9,15 @@ description: Bootstrap or update an Altertable SDK repository from a versioned c
 
 Use this skill to initialize or update an SDK repository against a specific version of `altertable-ai/altertable-client-specs`. All contributions go through a fork + branch + PR workflow — the maintainer agent has no direct write access to the target repository.
 
+## Related Skills
+
+This skill coordinates with other SDK development skills:
+
+- **[build-lakehouse-sdk](../build-lakehouse-sdk/SKILL.md)**: Implementation guide for Lakehouse API clients
+- **[build-product-analytics-sdk](../build-product-analytics-sdk/SKILL.md)**: Implementation guide for Product Analytics SDKs
+- **[build-http-sdk](../build-http-sdk/SKILL.md)**: HTTP client best practices (referenced by build-* skills)
+- **[release-sdk](../release-sdk/SKILL.md)**: Versioning, changelog, and registry publishing conventions
+
 ## Inputs
 
 Collect before starting:
@@ -108,3 +117,4 @@ Given: target repo + spec tag
 - The `specs/` directory should be treated as read-only; never modify files inside it.
 - Pin the submodule to the tag's commit SHA, not a branch, to ensure reproducibility.
 - If the fork already exists and is stale, sync it before branching: `gh repo sync <your-fork> --source <target-repo>`.
+- **Monorepo exception**: Product Analytics web framework wrappers (React, Vue, Svelte, etc.) live in the [`altertable-js` monorepo](https://github.com/altertable-ai/altertable-js) under `packages/`, not in separate repositories. For these, skip the fork/clone workflow and work directly in the monorepo.

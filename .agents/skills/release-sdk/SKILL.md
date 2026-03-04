@@ -5,6 +5,14 @@ description: Defines conventions for releasing open-source SDKs and libraries. U
 
 # Release SDK Skill
 
+## Related Skills
+
+This skill is referenced by `build-*` skills during their packaging/release phases:
+
+- **[bootstrap-sdk](../bootstrap-sdk/SKILL.md)**: Repo initialization and spec submodule workflow
+- **[build-lakehouse-sdk](../build-lakehouse-sdk/SKILL.md)**: Lakehouse API client implementation
+- **[build-product-analytics-sdk](../build-product-analytics-sdk/SKILL.md)**: Product Analytics SDK implementation
+
 ## Versioning
 
 Use [Semantic Versioning](https://semver.org/):
@@ -15,7 +23,25 @@ Use [Semantic Versioning](https://semver.org/):
 
 ## Package Naming
 
-Convention: `altertable-{lang}` or `altertable-{framework}`.
+Convention: `altertable-{product}-{lang}` for product-specific SDKs, `altertable-{lang}` for product analytics SDKs (the default product).
+
+### Lakehouse SDKs
+
+Each language gets its own repository: `altertable-ai/altertable-lakehouse-{lang}`.
+
+| Language | Package Name | Registry |
+|----------|--------------|----------|
+| Ruby | `altertable-lakehouse-ruby` | RubyGems |
+| Python | `altertable-lakehouse-python` | PyPI |
+| Go | `altertable-lakehouse-go` | Go Modules |
+| Java | `altertable-lakehouse-java` | Maven Central |
+| Kotlin | `altertable-lakehouse-kotlin` | Maven Central |
+| Rust | `altertable-lakehouse-rust` | crates.io |
+| PHP | `altertable-lakehouse-php` | Packagist |
+
+### Product Analytics SDKs
+
+The JS/TS SDK and web framework wrappers live in the [`altertable-js` monorepo](https://github.com/altertable-ai/altertable-js) under `packages/`. Other languages get their own repositories.
 
 | Language/Framework | Package Name | Registry |
 |--------------------|--------------|----------|
