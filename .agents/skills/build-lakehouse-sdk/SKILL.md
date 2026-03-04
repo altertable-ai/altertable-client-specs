@@ -168,7 +168,6 @@ The client must support all of the following credential input patterns:
 3. **Environment variable discovery** — auto-discover from the environment:
    - `ALTERTABLE_USERNAME` + `ALTERTABLE_PASSWORD` (encode on the fly), or
    - `ALTERTABLE_BASIC_AUTH_TOKEN` (use directly as the pre-encoded value)
-4. **Optional per-request override** — allow passing alternative credentials/token on individual method calls.
 
 Implementation requirements:
 
