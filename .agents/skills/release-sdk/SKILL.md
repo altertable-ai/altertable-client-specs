@@ -32,7 +32,7 @@ Each language gets its own repository: `altertable-ai/altertable-lakehouse-{lang
 | Language | Package Name | Registry |
 |----------|--------------|----------|
 | Ruby | `altertable-lakehouse-ruby` | RubyGems |
-| Python | `altertable-lakehouse-py` | PyPI |
+| Python | `altertable-lakehouse-python` | PyPI |
 | Go | `altertable-lakehouse-go` | Go Modules |
 | Java | `altertable-lakehouse-java` | Maven Central |
 | Kotlin | `altertable-lakehouse-kotlin` | Maven Central |
