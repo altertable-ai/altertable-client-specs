@@ -212,11 +212,45 @@ Implement layered tests:
    - retries/timeouts
    - input precondition checks
 
-2. Integration tests (opt-in)
-   - run only when credentials/env are present
-   - do one real `query` stream, one `queryAll` to fetch all rows, one `getQuery` to fetch log, one `cancelQuery` to cancel, one `upload`, and one `validate` against the live API
+2. Integration tests — run against `ghcr.io/altertable-ai/altertable-mock:latest`
 
-CI should always run lint + typecheck + unit + contract tests.
+   The mock server speaks the full Altertable Lakehouse API. Credentials are configured via the `ALTERTABLE_MOCK_USERS` environment variable, server listens on port `15000`.
+
+   Use a **dual-mode** approach so tests always run — both locally and in CI — without real credentials:
+
+   **In CI (GitHub Actions):** declare the mock as a service container so it is pre-bound to `localhost:15000` before the test step starts:
+
+   ```yaml
+   services:
+     altertable:
+       image: ghcr.io/altertable-ai/altertable-mock:latest
+       ports:
+         - 15000:15000
+       env:
+         ALTERTABLE_MOCK_USERS: testuser:testpass
+       options: >-
+         --health-cmd "exit 0"
+         --health-interval 5s
+         --health-timeout 3s
+         --health-retries 3
+         --health-start-period 10s
+   ```
+
+   **Outside CI (local development):** use the language-native Testcontainers library to pull and start the mock automatically before the test suite, store the mapped port in an environment variable (e.g. `ALTERTABLE_MOCK_PORT`), and stop the container via an `at_exit` / teardown hook. Skip this step when the `CI` environment variable is set.
+
+   The test base URL is always `http://localhost:${ALTERTABLE_MOCK_PORT:-15000}`. Point every test client instance at this URL.
+
+   Cover at minimum:
+
+   - one streamed `query` call verifying metadata, columns, and row iteration
+   - one `queryAll` call verifying all rows are accumulated
+   - one `getQuery` call verifying the query log response
+   - one `cancelQuery` call verifying the cancellation response
+   - one `upload` call (CSV or JSON payload)
+   - one `validate` call
+   - one `append` call
+
+CI should always run lint + typecheck + unit + integration tests (mock-backed). No test should be skipped due to missing credentials.
 
 ### Phase 10: Packaging and Release
 
@@ -278,7 +312,7 @@ Only mark implementation complete when all are true:
 - [ ] Typed errors are comprehensive and actionable
 - [ ] Auth supports direct/env/provider patterns
 - [ ] Retries/timeouts/transport hooks are configurable
-- [ ] Tests provide real-world confidence
+- [ ] Tests provide real-world confidence via the mock server (runs in both CI and local dev)
 - [ ] Package is publish-ready for primary registry
 - [ ] MIT license and OSS docs are present
 
@@ -294,4 +328,4 @@ If NDJSON streaming produces unexpected line formats, fail loudly with line inde
 
 ### Tests cannot run
 
-If a test phase is blocked (e.g., missing native dependencies, no live credentials for integration tests), skip with a clear `TODO` and a logged warning — do not silently omit test coverage. Document what is skipped and why in the PR description.
+Integration tests use the mock server and require no live credentials, so they should always run. If the test phase is still blocked (e.g., Docker unavailable in the runner, missing native Testcontainers bindings), skip with a clear `TODO` and a logged warning — do not silently omit test coverage. Document what is skipped and why in the PR description.
