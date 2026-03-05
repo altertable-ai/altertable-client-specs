@@ -131,19 +131,19 @@ gh api \
 JSON
 echo "    Done."
 
-# ── 5. Create standard GitHub labels ─────────────────────────────────────────
-# Labels defined in .agents/skills/triage-issues/SKILL.md
+# ── 5. Ensure standard org-level labels exist ────────────────────────────────
+# Labels are managed at org scope so they apply to every repo automatically.
 
-echo "==> Creating standard labels"
+echo "==> Ensuring standard org-level labels exist"
 
 create_label() {
   local name="$1" color="$2" description="$3"
-  if gh api "repos/$REPO/labels/$name" --jq '.name' &>/dev/null 2>&1; then
-    gh api --method PATCH "repos/$REPO/labels/$name" \
+  if gh api "orgs/$ORG/labels/$name" --jq '.name' &>/dev/null 2>&1; then
+    gh api --method PATCH "orgs/$ORG/labels/$name" \
       --field color="$color" \
       --field description="$description" > /dev/null
   else
-    gh api --method POST "repos/$REPO/labels" \
+    gh api --method POST "orgs/$ORG/labels" \
       --field name="$name" \
       --field color="$color" \
       --field description="$description" > /dev/null
@@ -182,5 +182,5 @@ echo "    Require status checks to pass (branches must be up to date)"
 echo "    Enforce for admins (no bypass)"
 echo "    Force-push / deletion: disabled"
 echo ""
-echo "  Labels: bug, enhancement, question, duplicate, needs-repro, needs-info,"
+echo "  Org-level labels: bug, enhancement, question, duplicate, needs-repro, needs-info,"
 echo "          stale, good first issue, wontfix, invalid, security, needs-human-review"

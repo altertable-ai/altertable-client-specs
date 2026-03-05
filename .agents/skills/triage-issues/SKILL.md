@@ -20,7 +20,7 @@ Triage applies to all repos listed in [sync-repos](../sync-repos/SKILL.md) — b
 
 ## Labels
 
-Ensure these labels exist in every repo (create missing ones):
+Labels are managed at the **organization scope** (`altertable-ai`) and automatically apply to every repo. Ensure these labels exist at the org level:
 
 | Label | Color | Description |
 |-------|-------|-------------|
