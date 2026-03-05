@@ -34,9 +34,21 @@ Collect before starting:
 1. Fork the target repo to your GitHub account (skip if fork already exists)
 2. Clone your fork locally
 3. Add the upstream remote
-4. Create a branch. For initial bootstrap use `bootstrap/specs-<spec-tag>`; for spec updates use `update/specs-<spec-tag>`
 
-### Phase 2: Set up the specs submodule
+### Phase 2: Setup CI (Initial bootstrap only)
+
+**Skip this phase for spec updates.**
+
+Before adding any code or submodules, CI must be operational to validate subsequent changes.
+
+1. Create a branch: `ci/initial-setup`
+2. Set up CI workflows for the target language (e.g. `.github/workflows/test.yml`).
+3. Push branch and open a PR: `"ci: initial setup"`
+4. **STOP and wait** for this PR to be merged before proceeding to Phase 3.
+
+### Phase 3: Set up the specs submodule
+
+1. Create a branch off the updated `main`. For initial bootstrap use `bootstrap/specs-<spec-tag>`; for spec updates use `update/specs-<spec-tag>`
 
 **Initial bootstrap** (submodule does not exist yet):
 
@@ -75,7 +87,7 @@ git add specs
 git commit -m "chore: update altertable-client-specs submodule to <new-spec-tag>"
 ```
 
-### Phase 3: Populate community files (initial bootstrap only)
+### Phase 4: Populate community files (initial bootstrap only)
 
 **Skip this phase for spec updates** — community files are managed separately via `sync-repos`.
 
@@ -85,11 +97,9 @@ For an initial bootstrap (repo has no community files yet), copy all managed fil
 
 2. Render any templated files (those containing `{variable}` placeholders) by substituting repo-specific values — refer to [`sync-repos/SKILL.md`](../sync-repos/SKILL.md) for the list of templated files and the variables each one expects.
 
-3. Set up CI workflows for the target language.
+3. Commit all community files together: `"chore: add community files"`
 
-4. Commit all community files together: `"chore: add community files"`
-
-### Phase 4: Implement or update the SDK
+### Phase 5: Implement or update the SDK
 
 Read the specs submodule to understand the API surface, then apply the appropriate SDK skill:
 
@@ -98,9 +108,9 @@ Read the specs submodule to understand the API surface, then apply the appropria
 
 **Initial bootstrap**: implement everything required by the skill from scratch.
 
-**Spec update**: use the spec diff from Phase 2 to identify what changed. Only implement what is new or modified. Document breaking changes in `CHANGELOG.md`.
+**Spec update**: use the spec diff from Phase 3 to identify what changed. Only implement what is new or modified. Document breaking changes in `CHANGELOG.md`.
 
-### Phase 5: Validate
+### Phase 6: Validate
 
 Before opening the PR:
 
@@ -111,7 +121,7 @@ Before opening the PR:
 - [ ] Package version bumped if applicable (follow [release-sdk](../release-sdk/SKILL.md) conventions)
 - [ ] Community files present (initial bootstrap only): `LICENSE`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CONTRIBUTING.md`, `.github/` templates
 
-### Phase 6: Open a PR
+### Phase 7: Open a PR
 
 Push the branch to your fork and open a PR against the upstream `main` branch.
 
@@ -120,11 +130,14 @@ Push the branch to your fork and open a PR against the upstream `main` branch.
 ```
 Given: target repo + spec tag
 │
-├── Does the repo have a `specs` submodule?
-│   ├── No  → Phase 1 (fork/clone) → Phase 2 (initial submodule) → Phase 3 (community files) → Phase 4 (full implementation)
-│   └── Yes → Phase 1 (fork/clone) → Phase 2 (update submodule) → Phase 4 (diff-based update)
+├── Is this a fresh repo (no CI)?
+│   └── Yes → Phase 1 (fork) → Phase 2 (CI PR) → WAIT FOR MERGE → Phase 3 (submodule) ...
 │
-└── Always → Phase 5 (validate) → Phase 6 (open PR)
+├── Does the repo have a `specs` submodule?
+│   ├── No  → Phase 1 (fork) → Phase 3 (initial submodule) → Phase 4 (community files) → Phase 5 (impl)
+│   └── Yes → Phase 1 (fork) → Phase 3 (update submodule) → Phase 5 (diff-based update)
+│
+└── Always → Phase 6 (validate) → Phase 7 (open PR)
 ```
 
 ## Notes
