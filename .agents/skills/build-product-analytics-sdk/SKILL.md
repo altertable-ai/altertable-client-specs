@@ -35,21 +35,21 @@ Web framework SDKs (React, Vue, Svelte, etc.) belong in this monorepo under `pac
 
 Key files:
 
-| File                                                        | Role                                                                                                                                                       |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sdk-constants.md` (this skill folder)                       | **SDK constants reference** — all config interfaces, defaults, and internal constants. Single source of truth for values referenced throughout this skill. |
-| `packages/altertable-js/src/core.ts`                        | Main `Altertable` class — init, track, identify, alias, sessions, consent                                                                                  |
-| `packages/altertable-js/src/types.ts`                       | Payload types (`TrackPayload`, `IdentifyPayload`, `AliasPayload`)                                                                                          |
-| `packages/altertable-js/src/lib/requester.ts`               | Transport — beacon/fetch, URL construction, timeout                                                                                                        |
-| `packages/altertable-js/src/lib/sessionManager.ts`          | Identity state, sessions, consent, device/anonymous/session IDs                                                                                            |
-| `packages/altertable-js/src/lib/storage.ts`                 | Storage abstraction (memory, cookie, localStorage, sessionStorage)                                                                                         |
-| `packages/altertable-js/src/constants.ts`                   | SDK constants (reserved IDs, default values, limits)                                                                                                       |
-| `packages/altertable-js/src/lib/validateUserId.ts`          | Reserved user ID validation                                                                                                                                |
-| `packages/altertable-js/src/lib/error.ts`                   | Error types and type guards                                                                                                                                |
-| `packages/altertable-js/src/lib/queue.ts`                   | Pre-init and consent queue                                                                                                                                 |
-| `packages/altertable-js/src/lib/safelyRunOnBrowser.ts`      | SSR-safe browser API access                                                                                                                                |
-| `packages/altertable-js/test/`                              | Test patterns (Vitest, custom matchers)                                                                                                                    |
-| `test-utils/`                                               | Shared test helpers (`toRequestApi`, `toWarnDev`, storage mocks)                                                                                           |
+| File                                                   | Role                                                                                                                                                       |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sdk-constants.md` (this skill folder)                 | **SDK constants reference** — all config interfaces, defaults, and internal constants. Single source of truth for values referenced throughout this skill. |
+| `packages/altertable-js/src/core.ts`                   | Main `Altertable` class — init, track, identify, alias, sessions, consent                                                                                  |
+| `packages/altertable-js/src/types.ts`                  | Payload types (`TrackPayload`, `IdentifyPayload`, `AliasPayload`)                                                                                          |
+| `packages/altertable-js/src/lib/requester.ts`          | Transport — beacon/fetch, URL construction, timeout                                                                                                        |
+| `packages/altertable-js/src/lib/sessionManager.ts`     | Identity state, sessions, consent, device/anonymous/session IDs                                                                                            |
+| `packages/altertable-js/src/lib/storage.ts`            | Storage abstraction (memory, cookie, localStorage, sessionStorage)                                                                                         |
+| `packages/altertable-js/src/constants.ts`              | SDK constants (reserved IDs, default values, limits)                                                                                                       |
+| `packages/altertable-js/src/lib/validateUserId.ts`     | Reserved user ID validation                                                                                                                                |
+| `packages/altertable-js/src/lib/error.ts`              | Error types and type guards                                                                                                                                |
+| `packages/altertable-js/src/lib/queue.ts`              | Pre-init and consent queue                                                                                                                                 |
+| `packages/altertable-js/src/lib/safelyRunOnBrowser.ts` | SSR-safe browser API access                                                                                                                                |
+| `packages/altertable-js/test/`                         | Test patterns (Vitest, custom matchers)                                                                                                                    |
+| `test-utils/`                                          | Shared test helpers (`toRequestApi`, `toWarnDev`, storage mocks)                                                                                           |
 
 ## Platform Tiers
 
@@ -179,6 +179,7 @@ Use platform-native secure storage (Keychain on iOS, EncryptedSharedPreferences 
 Mobile SDKs often run unit tests on Linux CI runners (e.g., GitHub Actions `ubuntu-latest`). Platform-specific security frameworks (like `Security.framework` on macOS/iOS) are unavailable on Linux.
 
 **Requirement:** Abstract your storage layer behind a protocol/interface.
+
 - **Production:** Inject the concrete secure storage implementation.
 - **Linux/CI:** Detect the platform (e.g., `#if os(Linux)`) and inject an **In-Memory** or **No-Op** storage implementation.
 - **Do not** simply skip tests. Verify the SDK logic using the in-memory fallback to ensure behavior (identity persistence, queueing) remains correct even without the native secure container.
@@ -394,11 +395,43 @@ Implement the mandatory test scenarios defined in [`TEST_PLAN.md`](TEST_PLAN.md)
 - Error handling and `onError` callback
 - Queue overflow behavior
 
-#### Integration tests (opt-in)
+#### Integration tests — run against `ghcr.io/altertable-ai/altertable-mock:latest`
 
-- Run when credentials/env present.
-- One real `track`, one `identify`, one `alias` against live API.
-- Verify response shape and error codes.
+The mock server speaks the full Altertable Product Analytics API. The API key is configured via the `ALTERTABLE_MOCK_API_KEY` environment variable, server listens on port `15001`.
+
+Use a **dual-mode** approach so tests always run — both locally and in CI — without real credentials:
+
+**In CI (GitHub Actions):** declare the mock as a service container so it is pre-bound to `localhost:15001` before the test step starts:
+
+```yaml
+services:
+  altertable:
+    image: ghcr.io/altertable-ai/altertable-mock:latest
+    ports:
+      - 15001:15001
+    env:
+      ALTERTABLE_MOCK_API_KEY: test_pk_abc123
+    options: >-
+      --health-cmd "exit 0"
+      --health-interval 5s
+      --health-timeout 3s
+      --health-retries 3
+      --health-start-period 10s
+```
+
+**Outside CI (local development):** use the language-native Testcontainers library to pull and start the mock automatically before the test suite, store the mapped port in an environment variable (e.g. `ALTERTABLE_MOCK_PORT`), and stop the container via an `at_exit` / teardown hook. Skip this step when the `CI` environment variable is set.
+
+The test base URL is always `http://localhost:${ALTERTABLE_MOCK_PORT:-15001}`. Point every test client instance at this URL.
+
+Cover at minimum:
+
+- one `track` call verifying the response shape
+- one `identify` call verifying the response shape
+- one `alias` call verifying the response shape
+- one call with an invalid API key verifying a `401` error response
+- one call with an invalid environment verifying an `environment-not-found` error response
+
+CI should always run lint + typecheck + unit + integration tests (mock-backed). No test should be skipped due to missing credentials.
 
 ### Phase 14: Packaging and Release
 
@@ -420,7 +453,7 @@ Additionally for this SDK:
 - [ ] Auto-capture with cleanup (web)
 - [ ] Typed errors with `onError` hook
 - [ ] Reserved user ID validation
-- [ ] Tests cover all tier-relevant behavior
+- [ ] Tests cover all tier-relevant behavior (mock-backed integration tests run in both CI and local dev)
 - [ ] Package is publish-ready
 - [ ] MIT license and docs present
 
@@ -440,4 +473,4 @@ Some platforms lack certain APIs (e.g., `crypto.randomUUID` in older runtimes, `
 
 ### Tests cannot run
 
-If a test phase is blocked (e.g., missing native dependencies, no live credentials for integration tests), skip with a clear `TODO` and a logged warning — do not silently omit test coverage. Document what is skipped and why in the PR description.
+Integration tests use the mock server and require no live credentials, so they should always run. If the test phase is still blocked (e.g., Docker unavailable in the runner, missing native Testcontainers bindings), skip with a clear `TODO` and a logged warning — do not silently omit test coverage. Document what is skipped and why in the PR description.
