@@ -381,7 +381,7 @@ Handle `environment-not-found` error specifically: log a warning with a link to 
 
 Implement the mandatory test scenarios defined in [`TEST_PLAN.md`](TEST_PLAN.md).
 
-Furthermore, verify serialized request payloads against the shared JSON fixtures in `.agents/skills/build-product-analytics-sdk/fixtures/`.
+Furthermore, verify serialized request payloads against the shared JSON fixtures in `skills/build-product-analytics-sdk/fixtures/`.
 
 #### Unit tests
 
