@@ -111,6 +111,10 @@ SDKs should send ISO 8601 timestamps by default.
 
 Implement a configurable client constructor. The full typed config interfaces (`WebConfig`, `MobileConfig`, `ServerConfig`) and their default values (`WEB_DEFAULTS`, `MOBILE_DEFAULTS`, `SERVER_DEFAULTS`) are defined in [sdk-constants.md](sdk-constants.md). Use those types and defaults as-is.
 
+**Thread Safety and State Isolation**:
+- **All tiers**: The SDK must deep-copy (or otherwise isolate) the provided configuration at initialization. This prevents external mutations of the config object from affecting the SDK's behavior without going through the `configure()` method.
+- **Mobile tier (Swift/Kotlin)**: All public API methods must be thread-safe. Use a private serial dispatch queue (or equivalent synchronization primitive) to serialize all access to internal state (identity, queue, consent). Dispatched operations should be asynchronous for public methods, while internal getters (e.g., for tests) may use synchronous access.
+
 **Server tier**: no sessions, no storage, no auto-capture. The client is stateless. Identity fields (`distinct_id`, `anonymous_id`, `device_id`) are passed explicitly per call.
 
 ### Phase 4: Identity Model
@@ -175,6 +179,9 @@ Support runtime storage migration when `persistence` config changes via `configu
 #### Mobile tier
 
 Use platform-native secure storage (Keychain on iOS, EncryptedSharedPreferences on Android). Fallback to standard storage if unavailable.
+
+**iOS Privacy Requirements**:
+Include a `PrivacyInfo.xcprivacy` manifest. If using `UserDefaults` to persist identity or consent state, ensure the correct reason code (e.g., `CA92.1`) is declared.
 
 **Linux CI Compatibility:**
 Mobile SDKs often run unit tests on Linux CI runners (e.g., GitHub Actions `ubuntu-latest`). Platform-specific security frameworks (like `Security.framework` on macOS/iOS) are unavailable on Linux.
@@ -259,12 +266,15 @@ When `autoCapture: true`:
 
 #### `updateTraits(traits)` — web/mobile tiers
 
-- Sends an identify call with new traits. Requires prior `identify()`.
+- Sends an `identify` call with updated traits for the current `distinct_id`.
+- If the current identity is anonymous, this should be a no-op or log a warning (traits should be associated with an identified user).
 
 #### `reset(options)` — web/mobile tiers
 
-- Clears session, generates new anonymous identity.
-- `resetDeviceId: true` also regenerates device ID.
+- Clears the current session and generates a new anonymous identity.
+- Options:
+  - `resetDeviceId: boolean` (default `false`) — Also regenerates the stable `device_id`.
+  - `resetTrackingConsent: boolean` (default `false`) — Resets tracking consent to the initial default state.
 - Clears the event queue.
 
 #### `configure(updates)` — web/mobile tiers
