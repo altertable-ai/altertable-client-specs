@@ -50,6 +50,7 @@ Follow these phases in order.
 2. Add MIT license.
 3. Add README, changelog, and contribution docs.
 4. Configure lint/typecheck/test scripts.
+5. Generate a comprehensive `.gitignore` using `https://www.toptal.com/developers/gitignore/api/{language}` as a reference.
 
 ### Phase 2: Models and Serialization
 

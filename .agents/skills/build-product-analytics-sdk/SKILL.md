@@ -95,6 +95,7 @@ If not provided, choose ecosystem-standard defaults and document them.
 2. Add MIT license, README, changelog.
 3. Configure lint/typecheck/test/build scripts.
 4. For web tier: set up bundler (e.g. `tsup`); configure `__DEV__`, `__LIB__`, `__LIB_VERSION__` build-time constants.
+5. Generate a comprehensive `.gitignore` using `https://www.toptal.com/developers/gitignore/api/{language}` as a reference.
 
 ### Phase 2: Models and Serialization
 

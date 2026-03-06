@@ -99,6 +99,10 @@ For an initial bootstrap (repo has no community files yet), copy all managed fil
 
 3. Commit all community files together: `"chore: add community files"`
 
+4. Generate a comprehensive `.gitignore` using `https://www.toptal.com/developers/gitignore/api/{language}` as a reference.
+
+5. Commit: `"chore: add .gitignore"`
+
 ### Phase 5: Implement or update the SDK
 
 Read the specs submodule to understand the API surface, then apply the appropriate SDK skill:
