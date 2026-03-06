@@ -35,7 +35,7 @@ Labels are managed at the **organization scope** (`altertable-ai`) and automatic
 | `wontfix` | `#ffffff` | Will not be addressed |
 | `invalid` | `#e4e669` | Not a valid issue |
 | `security` | `#d73a4a` | Security-related (see SECURITY.md) |
-| `needs-human-review` | `#ff8c00` | Escalation marker — blocker or ambiguity requiring human judgment (see [MAINTAINER_SOUL](../../../MAINTAINER_SOUL.md) Section 4) |
+| `needs-human-review` | `#ff8c00` | Escalation marker — blocker or ambiguity requiring human judgment (see [MAINTAINER_SOUL](../../../MAINTAINER_SOUL.md) Section 5) |
 
 ## Triage Workflow
 
