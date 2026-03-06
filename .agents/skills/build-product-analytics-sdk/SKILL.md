@@ -437,7 +437,27 @@ Cover at minimum:
 
 CI should always run lint + typecheck + unit + integration tests (mock-backed). No test should be skipped due to missing credentials.
 
-### Phase 14: Packaging and Release
+### Phase 14: Example App
+
+**Web and mobile tiers only.**
+
+Include a runnable mini-app in the `Examples/` directory (or language-idiomatic equivalent) that demonstrates a complete user journey. This example serves as both a manual test bench and a reference for developers.
+
+The example must match the user journey and API coverage of the [React reference implementation](https://github.com/altertable-ai/altertable-js/tree/main/examples/example-react/src):
+
+1. **Multi-step Signup Funnel**: A minimum 3-step form (e.g., Personal Info, Account Setup, Plan Selection).
+2. **Event Tracking**:
+   - Track `Step Viewed` on each step.
+   - Track transition events (e.g., `Personal Info Completed`, `Account Setup Completed`).
+   - Track interaction events (e.g., `Plan Selected`, `Terms Agreement Changed`).
+3. **Identity Management**:
+   - On the final step, call `identify(userId, traits)` with the collected information.
+   - Track `Form Submitted` immediately after identification.
+4. **State Persistence**: Verify that the SDK maintains state across step transitions.
+
+For mobile SDKs, this should be a simple SwiftUI (iOS) or Jetpack Compose (Android) app. For web-framework wrappers, it should be a minimal project using that framework.
+
+### Phase 15: Packaging and Release
 
 Follow the [release-sdk](../release-sdk/SKILL.md) skill for versioning, naming, changelog format, CI/CD, and registry publishing conventions.
 
@@ -458,6 +478,7 @@ Additionally for this SDK:
 - [ ] Typed errors with `onError` hook
 - [ ] Reserved user ID validation
 - [ ] Tests cover all tier-relevant behavior (mock-backed integration tests run in both CI and local dev)
+- [ ] Runnable example app matching the React reference journey (web/mobile)
 - [ ] Package is publish-ready
 - [ ] MIT license and docs present
 
