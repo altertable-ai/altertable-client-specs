@@ -20,7 +20,11 @@ SDK repositories pin a specific version tag of this repo via a `specs/` submodul
 | [`build-product-analytics-sdk`](skills/build-product-analytics-sdk/SKILL.md) | Build an Altertable Product Analytics SDK with identity, event tracking, and auto-capture             |
 | [`build-http-sdk`](skills/build-http-sdk/SKILL.md)                           | HTTP client best practices — connection pooling, keep-alive, timeouts (referenced by build-\* skills) |
 | [`build-readme`](skills/build-readme/SKILL.md)                               | Write READMEs for SDK repos and monorepo roots following Altertable conventions                       |
+| [`maintainer-routine`](skills/maintainer-routine/SKILL.md)                   | Notification-driven maintainer routine to identify actionable work across Altertable SDK repositories |
 | [`release-sdk`](skills/release-sdk/SKILL.md)                                 | Release SDKs, write changelogs, and publish to language registries                                    |
+| [`review-pr`](skills/review-pr/SKILL.md)                                     | Review community pull requests against Altertable SDK standards                                       |
+| [`sync-repos`](skills/sync-repos/SKILL.md)                                   | Keep shared configuration, community files, and CI templates consistent across SDK repositories       |
+| [`triage-issues`](skills/triage-issues/SKILL.md)                             | Triage incoming GitHub issues across Altertable SDK repositories                                      |
 
 ## Using This Repo as a Submodule
 
