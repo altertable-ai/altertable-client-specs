@@ -22,20 +22,20 @@ Triage applies to all repos listed in [sync-repos](../sync-repos/SKILL.md) — b
 
 Labels are managed at the **organization scope** (`altertable-ai`) and automatically apply to every repo. Ensure these labels exist at the org level:
 
-| Label | Color | Description |
-|-------|-------|-------------|
-| `bug` | `#d73a4a` | Confirmed bug |
-| `enhancement` | `#a2eeef` | Feature request |
-| `question` | `#d876e3` | Usage question (not a bug) |
-| `duplicate` | `#cfd3d7` | Duplicate of an existing issue |
-| `needs-repro` | `#fbca04` | Awaiting minimal reproduction |
-| `needs-info` | `#fbca04` | Awaiting more information from author |
-| `stale` | `#e4e669` | No activity for 30+ days |
-| `good first issue` | `#7057ff` | Good for newcomers |
-| `wontfix` | `#ffffff` | Will not be addressed |
-| `invalid` | `#e4e669` | Not a valid issue |
-| `security` | `#d73a4a` | Security-related (see SECURITY.md) |
-| `needs-human-review` | `#ff8c00` | Escalation marker — blocker or ambiguity requiring human judgment (see [MAINTAINER_SOUL](../../../MAINTAINER_SOUL.md) Section 5) |
+| Label                | Color     | Description                                                                                                |
+| -------------------- | --------- | ---------------------------------------------------------------------------------------------------------- |
+| `bug`                | `#d73a4a` | Confirmed bug                                                                                              |
+| `enhancement`        | `#a2eeef` | Feature request                                                                                            |
+| `question`           | `#d876e3` | Usage question (not a bug)                                                                                 |
+| `duplicate`          | `#cfd3d7` | Duplicate of an existing issue                                                                             |
+| `needs-repro`        | `#fbca04` | Awaiting minimal reproduction                                                                              |
+| `needs-info`         | `#fbca04` | Awaiting more information from author                                                                      |
+| `stale`              | `#e4e669` | No activity for 30+ days                                                                                   |
+| `good first issue`   | `#7057ff` | Good for newcomers                                                                                         |
+| `wontfix`            | `#ffffff` | Will not be addressed                                                                                      |
+| `invalid`            | `#e4e669` | Not a valid issue                                                                                          |
+| `security`           | `#d73a4a` | Security-related (see SECURITY.md)                                                                         |
+| `needs-human-review` | `#ff8c00` | Escalation marker — blocker or ambiguity requiring human judgment (see [SOUL](../../../SOUL.md) Section 5) |
 
 ## Triage Workflow
 
@@ -57,6 +57,7 @@ gh issue list --repo <repo> --state all --search "<keywords>" --limit 20
 ```
 
 If a duplicate is found:
+
 1. Apply `duplicate` label
 2. Comment linking to the original issue: `Closing as duplicate of #<number>.`
 3. Close the issue
@@ -112,6 +113,7 @@ gh issue list --repo <repo> --state open --label "needs-repro,needs-info" \
 ```
 
 For each stale issue:
+
 1. Apply `stale` label
 2. Comment:
 

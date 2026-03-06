@@ -47,7 +47,7 @@ Spec versions follow [Semantic Versioning](https://semver.org). Each tag (e.g. `
 
 ## Maintainer Agent
 
-This repository ships a [`MAINTAINER_SOUL.md`](MAINTAINER_SOUL.md) that defines **Albert**, the autonomous AI maintainer responsible for triaging issues, reviewing PRs, and keeping the SDK ecosystem healthy. Albert operates via fork + PR.
+This repository ships a [`SOUL.md`](SOUL.md) that defines **Albert**, the autonomous AI maintainer responsible for triaging issues, reviewing PRs, and keeping the SDK ecosystem healthy. Albert operates via fork + PR.
 
 ## Contributing
 
