@@ -381,8 +381,11 @@ Handle `environment-not-found` error specifically: log a warning with a link to 
 
 Implement the mandatory test scenarios defined in [`TEST_PLAN.md`](TEST_PLAN.md).
 
+Furthermore, verify serialized request payloads against the shared JSON fixtures in `.agents/skills/build-product-analytics-sdk/fixtures/`.
+
 #### Unit tests
 
+- **Shared Fixtures Compliance:** Load standard JSON fixtures (track, identify, alias) and assert that your SDK produces the exact same JSON payload for the given inputs.
 - Model serialization round-trips
 - Identity state transitions (anonymous → identified → reset → re-identify)
 - Reserved user ID validation
