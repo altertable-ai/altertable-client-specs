@@ -15,7 +15,7 @@ This skill coordinates with other SDK development skills:
 
 - **[build-lakehouse-sdk](../build-lakehouse-sdk/SKILL.md)**: Implementation guide for Lakehouse API clients
 - **[build-product-analytics-sdk](../build-product-analytics-sdk/SKILL.md)**: Implementation guide for Product Analytics SDKs
-- **[build-http-sdk](../build-http-sdk/SKILL.md)**: HTTP client best practices (referenced by build-* skills)
+- **[build-http-sdk](../build-http-sdk/SKILL.md)**: HTTP client best practices (referenced by build-\* skills)
 - **[sync-repos](../sync-repos/SKILL.md)**: Cross-repo consistency for community files and config
 - **[release-sdk](../release-sdk/SKILL.md)**: Versioning, changelog, and registry publishing conventions
 
@@ -112,7 +112,7 @@ Read the specs submodule to understand the API surface, then apply the appropria
 
 **Initial bootstrap**: implement everything required by the skill from scratch.
 
-**Spec update**: use the spec diff from Phase 3 to identify what changed. Only implement what is new or modified. Document breaking changes in `CHANGELOG.md`.
+**Spec update**: use the spec diff from Phase 3 to identify what changed. Only implement what is new or modified.
 
 ### Phase 6: Validate
 
@@ -120,14 +120,12 @@ Before opening the PR:
 
 - [ ] All tests pass (`lint`, `typecheck`, `unit`, `integration` where applicable)
 - [ ] Submodule points to the correct spec tag commit
-- [ ] `CHANGELOG.md` is updated with a new entry
 - [ ] `README.md` reflects any new public API surface
-- [ ] Package version bumped if applicable (follow [release-sdk](../release-sdk/SKILL.md) conventions)
 - [ ] Community files present (initial bootstrap only): `LICENSE`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CONTRIBUTING.md`, `.github/` templates
 
 ### Phase 7: Open a PR
 
-Push the branch to your fork and open a PR against the upstream `main` branch.
+Push the branch to your fork and open a PR against the upstream `main` branch. Rely on conventional commits for the PR title as all commits of the PR will be squashed and the PR title and description used as commit message. This will generate the changelog entry for the `CHANGELOG.md` file.
 
 ## Decision tree
 

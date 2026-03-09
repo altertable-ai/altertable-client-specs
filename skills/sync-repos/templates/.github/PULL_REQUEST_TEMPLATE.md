@@ -9,5 +9,5 @@
 ## Checklist
 
 - [ ] Tests added or updated
-- [ ] `CHANGELOG.md` updated (skip for docs/CI-only changes)
+- [ ] Rely on conventional commits for the PR title as all commits of the PR will be squashed
 - [ ] Breaking change noted in commit footer (`BREAKING CHANGE: …`) and changelog
