@@ -238,7 +238,12 @@ When `autoCapture: true`:
 
 #### `track`
 
-**Web/mobile**: `track(event, properties?, timestamp?)`
+**Web/mobile**: `track(event, properties?, options?)`
+
+`options` (web/mobile, all optional, use named/keyword arguments):
+
+- `timestamp` — ISO 8601 string or Unix epoch integer (seconds); defaults to current time
+
 **Server**: `track(event, distinct_id, options?)`
 
 `options` (server, all optional, use named/keyword arguments):
@@ -257,7 +262,12 @@ When `autoCapture: true`:
 
 #### `identify`
 
-**Web/mobile**: `identify(user_id, traits?, timestamp?)`
+**Web/mobile**: `identify(user_id, traits?, options?)`
+
+`options` (web/mobile, all optional, use named/keyword arguments):
+
+- `timestamp` — ISO 8601 string or Unix epoch integer (seconds); defaults to current time
+
 **Server**: `identify(user_id, options?)`
 
 `options` (server, all optional, use named/keyword arguments):
@@ -275,7 +285,12 @@ When `autoCapture: true`:
 
 #### `alias`
 
-**Web/mobile**: `alias(new_user_id, timestamp?)`
+**Web/mobile**: `alias(new_user_id, options?)`
+
+`options` (web/mobile, all optional, use named/keyword arguments):
+
+- `timestamp` — ISO 8601 string or Unix epoch integer (seconds); defaults to current time
+
 **Server**: `alias(distinct_id, new_user_id, options?)`
 
 `options` (server, all optional, use named/keyword arguments):
