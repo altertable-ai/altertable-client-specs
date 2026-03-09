@@ -113,6 +113,8 @@ Implement a configurable client constructor. The full typed config interfaces (`
 
 **Server tier**: no sessions, no storage, no auto-capture. The client is stateless. Identity fields (`distinct_id`, `anonymous_id`, `device_id`) are passed explicitly per call — this directly shapes the method signatures for `track`, `identify`, and `alias` on the server tier. See Phase 10 for the exact prototypes.
 
+**Named/keyword arguments for optional parameters (all tiers):** Never create a method where callers must pass `null` or a positional placeholder to reach a later optional argument. Group all optional parameters into a named options object/struct/dict — or use the language's native keyword argument syntax — so callers can supply any subset in any order without dummy positional values. This applies to both the server-tier `options` objects in Phase 10 and any other method that gains multiple optional parameters in the future.
+
 ### Phase 4: Identity Model
 
 **All tiers, but implementation differs.**
@@ -237,7 +239,14 @@ When `autoCapture: true`:
 #### `track`
 
 **Web/mobile**: `track(event, properties?, timestamp?)`
-**Server**: `track(event, distinct_id, properties?, anonymous_id?, device_id?, timestamp?)`
+**Server**: `track(event, distinct_id, options?)`
+
+`options` (server, all optional, use named/keyword arguments):
+
+- `properties` — event properties dict/object
+- `anonymous_id` — pass when forwarding client-side identity context
+- `device_id` — pass when forwarding client-side identity context
+- `timestamp` — ISO 8601 string or Unix epoch integer (seconds); defaults to current time
 
 - `POST /track`
 - Attach context: `environment`, `device_id`, `distinct_id`, `anonymous_id`, `session_id`, `timestamp`.
@@ -249,7 +258,14 @@ When `autoCapture: true`:
 #### `identify`
 
 **Web/mobile**: `identify(user_id, traits?, timestamp?)`
-**Server**: `identify(user_id, traits?, anonymous_id?, device_id?, timestamp?)`
+**Server**: `identify(user_id, options?)`
+
+`options` (server, all optional, use named/keyword arguments):
+
+- `traits` — user traits dict/object
+- `anonymous_id` — pass when forwarding client-side identity context
+- `device_id` — pass when forwarding client-side identity context
+- `timestamp` — ISO 8601 string or Unix epoch integer (seconds); defaults to current time
 
 - `POST /identify`
 - Transition identity state (web/mobile) or pass IDs explicitly (server).
@@ -260,7 +276,11 @@ When `autoCapture: true`:
 #### `alias`
 
 **Web/mobile**: `alias(new_user_id, timestamp?)`
-**Server**: `alias(distinct_id, new_user_id, timestamp?)`
+**Server**: `alias(distinct_id, new_user_id, options?)`
+
+`options` (server, all optional, use named/keyword arguments):
+
+- `timestamp` — ISO 8601 string or Unix epoch integer (seconds); defaults to current time
 
 - `POST /alias`
 - Links `distinct_id` → `new_user_id`.
