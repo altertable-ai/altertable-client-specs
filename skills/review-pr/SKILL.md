@@ -42,13 +42,13 @@ All CI checks must pass before approving. If checks fail:
 
 Verify all new public API symbols follow the SDK's naming conventions:
 
-| Aspect | Convention |
-|--------|-----------|
-| Package name | `altertable-{product}-{lang}` or `altertable-{lang}` (see [release-sdk](../release-sdk/SKILL.md)) |
-| Methods | Language-idiomatic casing (`snake_case` for Ruby/Python/Rust/Go/PHP, `camelCase` for JS/TS/Java/Kotlin/Swift) |
-| Constants | `UPPER_SNAKE_CASE` across all languages |
-| Types/Classes | `PascalCase` across all languages |
-| Config options | Match existing option naming in the SDK |
+| Aspect         | Convention                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------------- |
+| Package name   | `altertable-{product}-{lang}` or `altertable-{lang}` (see [release-sdk](../release-sdk/SKILL.md))             |
+| Methods        | Language-idiomatic casing (`snake_case` for Ruby/Python/Rust/Go/PHP, `camelCase` for JS/TS/Java/Kotlin/Swift) |
+| Constants      | `UPPER_SNAKE_CASE` across all languages                                                                       |
+| Types/Classes  | `PascalCase` across all languages                                                                             |
+| Config options | Match existing option naming in the SDK                                                                       |
 
 #### Test coverage
 
@@ -62,13 +62,7 @@ Check test files exist alongside implementation changes. If missing, request the
 
 #### Changelog
 
-All user-facing changes must have a `CHANGELOG.md` entry under `[Unreleased]`:
-
-- Uses imperative mood ("Add support for…", not "Added support for…")
-- Categorized correctly (`Added`, `Changed`, `Fixed`, `Removed`)
-- One entry per logical change
-
-If missing, request it with a suggestion. For internal-only changes (CI, docs, refactors with no API change), a changelog entry is optional.
+We use the `release-please` GitHub Action to generate changelog entries from the commit messages.
 
 #### Commit messages
 
@@ -103,15 +97,15 @@ If the PR introduces a breaking change:
 
 ## Decision Matrix
 
-| Condition | Action |
-|-----------|--------|
-| CI green, standards met, tests included | **Approve** |
-| Minor issues (typo, missing changelog entry, small style nit) | **Approve** with comments |
-| Missing tests or incomplete implementation | **Request changes** |
-| CI failing | **Request changes** — ask author to fix |
-| Breaks public API without justification | **Request changes** |
-| Spam, off-topic, or fundamentally misguided approach | **Close** with explanation |
-| Duplicate of another PR | **Close** linking to the other PR |
+| Condition                                                     | Action                                  |
+| ------------------------------------------------------------- | --------------------------------------- |
+| CI green, standards met, tests included                       | **Approve**                             |
+| Minor issues (typo, missing changelog entry, small style nit) | **Approve** with comments               |
+| Missing tests or incomplete implementation                    | **Request changes**                     |
+| CI failing                                                    | **Request changes** — ask author to fix |
+| Breaks public API without justification                       | **Request changes**                     |
+| Spam, off-topic, or fundamentally misguided approach          | **Close** with explanation              |
+| Duplicate of another PR                                       | **Close** linking to the other PR       |
 
 ## Comment Guidelines
 

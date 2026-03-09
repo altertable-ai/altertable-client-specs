@@ -28,5 +28,5 @@ This project uses `{linter}` for linting and `{formatter}` for formatting. Run `
 ## Pull Requests
 
 - Keep PRs focused on a single change
-- Update `CHANGELOG.md` under `[Unreleased]`
+- Rely on conventional commits for the PR title as all commits will be squashed and the PR title and description as commit message for the changelog entry
 - Ensure CI passes before requesting review
