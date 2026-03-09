@@ -241,7 +241,8 @@ When `autoCapture: true`:
 
 - `POST /track`
 - Attach context: `environment`, `device_id`, `distinct_id`, `anonymous_id`, `session_id`, `timestamp`.
-- `timestamp` is an optional ISO 8601 string or Unix epoch integer (seconds). If omitted, default to the current time as an ISO 8601 string. (`PROPERTY_LIB`, `PROPERTY_LIB_VERSION`, `PROPERTY_RELEASE`, `PROPERTY_URL`) with user properties. User properties win on conflict. See [sdk-constants.md](sdk-constants.md) for key values.
+- `timestamp` is an optional ISO 8601 string or Unix epoch integer (seconds). If omitted, default to the current time as an ISO 8601 string.
+- Merge system properties (`PROPERTY_LIB`, `PROPERTY_LIB_VERSION`, `PROPERTY_RELEASE`, `PROPERTY_URL`) with user properties. User properties win on conflict. See [sdk-constants.md](sdk-constants.md) for key values.
 - Renew session before sending (web/mobile).
 - **Server tier**: `distinct_id` is required (no stored identity). `anonymous_id` and `device_id` are optional — pass them when you have them (e.g. forwarded from a client SDK), omit otherwise. `session_id` is never included (stateless).
 
