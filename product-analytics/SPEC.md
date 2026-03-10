@@ -16,7 +16,7 @@ Key files:
 
 | File                                                   | Role                                                                                                                                                       |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `constants.md` (this spec folder)                      | **SDK constants reference** — all config interfaces, defaults, and internal constants. Single source of truth for values referenced throughout this spec. |
+| `constants.jsonnet` (this spec folder)                      | **SDK constants reference** — all config interfaces, defaults, and internal constants. Single source of truth for values referenced throughout this spec. |
 | `packages/altertable-js/src/core.ts`                   | Main `Altertable` class — init, track, identify, alias, sessions, consent                                                                                  |
 | `packages/altertable-js/src/types.ts`                  | Payload types (`TrackPayload`, `IdentifyPayload`, `AliasPayload`)                                                                                          |
 | `packages/altertable-js/src/lib/requester.ts`          | Transport — beacon/fetch, URL construction, timeout                                                                                                        |
@@ -76,7 +76,7 @@ All three methods (`track`, `identify`, `alias`) accept an optional `timestamp` 
 
 **All tiers.**
 
-Implement a configurable client constructor. The full typed config interfaces (`WebConfig`, `MobileConfig`, `ServerConfig`) and their default values (`WEB_DEFAULTS`, `MOBILE_DEFAULTS`, `SERVER_DEFAULTS`) are defined in [constants.md](constants.md). Use those types and defaults as-is.
+Implement a configurable client constructor. The full typed config interfaces (`WebConfig`, `MobileConfig`, `ServerConfig`) and their default values (`WEB_DEFAULTS`, `MOBILE_DEFAULTS`, `SERVER_DEFAULTS`) are defined in [constants.jsonnet](constants.jsonnet). Use those types and defaults as-is.
 
 **Server tier**: no sessions, no storage, no auto-capture. The client is stateless. Identity fields (`distinct_id`, `anonymous_id`, `device_id`) are passed explicitly per call — this directly shapes the method signatures for `track`, `identify`, and `alias` on the server tier. See Phase 10 for the exact prototypes.
 
@@ -95,7 +95,7 @@ The SDK manages three identity concepts:
 | `anonymous_id` | `{PREFIX_ANONYMOUS_ID}-{uuid}` or `null`        | `PREFIX_ANONYMOUS_ID` | Previous anonymous ID after `identify()` — enables backend identity merge |
 | `session_id`   | `{PREFIX_SESSION_ID}-{uuid}`                    | `PREFIX_SESSION_ID`   | Groups events within an activity window                                   |
 
-See [constants.md](constants.md) for prefix values.
+See [constants.jsonnet](constants.jsonnet) for prefix values.
 
 #### State transitions
 
