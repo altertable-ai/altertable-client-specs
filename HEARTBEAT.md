@@ -1,6 +1,6 @@
 # Maintainer Heartbeat
 
-# Schedule: Every 5 minute
+# Schedule: Every 2 minutes
 
 # Priority: High
 
