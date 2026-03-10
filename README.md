@@ -1,6 +1,5 @@
 # Altertable Client Specs
 
-[![Build Status](https://github.com/altertable-ai/altertable-client-specs/actions/workflows/ci.yml/badge.svg)](https://github.com/altertable-ai/altertable-client-specs/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 Versioned API specifications and agent skills for building and maintaining Altertable open-source SDKs.
