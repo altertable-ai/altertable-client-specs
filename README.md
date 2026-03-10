@@ -11,6 +11,19 @@ This repository serves two purposes:
 
 SDK repositories pin a specific version tag of this repo via a `specs/` submodule, ensuring every SDK is built against a known, reproducible spec snapshot.
 
+
+## Supported Language Versions
+
+To ensure a modern developer experience, performance, and security, Altertable SDKs target the following minimum language and runtime versions:
+
+| Ecosystem | Minimum Version |
+|---|---|
+| **Node.js** | 20.x (LTS) |
+| **Python** | 3.10+ |
+| **Ruby** | 3.2+ |
+| **Swift** | 6.0+ |
+| **Kotlin** | 2.0+ |
+
 ## Skills
 
 | Skill                                                                        | Description                                                                                           |
