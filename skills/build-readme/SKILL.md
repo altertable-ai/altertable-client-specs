@@ -23,6 +23,8 @@ Use this skill to produce either type.
 ```markdown
 # {Repo Title}
 
+{Badges: CI Status, Registry Version, License, etc. using shields.io}
+
 {One-sentence description of what the repo contains and its purpose.}
 
 ## Packages
@@ -102,12 +104,13 @@ Use this skill to produce either type.
 
 Follow the structure defined in the [release-sdk](../release-sdk/SKILL.md) skill:
 
-1. One-line description
-2. Install
-3. Quick start
-4. API reference
-5. Configuration
-6. License
+1. Title and Badges (CI Status, Registry Version, etc.)
+2. One-line description
+3. Install
+4. Quick start
+5. API reference
+6. Configuration
+7. License
 
 ### Additional conventions for Altertable packages
 
