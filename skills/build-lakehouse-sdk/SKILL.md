@@ -15,7 +15,7 @@ Primary OpenAPI specification reference: `https://api.altertable.ai/openapi/lake
 
 **Before starting implementation:**
 
-- **If initializing a new SDK repo or updating to a new spec version**: Use [`bootstrap-sdk`](../bootstrap-sdk/SKILL.md) first to fork the target repository, clone it, set up/update the `specs` submodule, and create a branch. Then return here to continue with the implementation phases below.
+- **If initializing a new SDK repo or updating to a new spec version**: Use [`bootstrap-sdk`](https://github.com/altertable-ai/altertable-workspace/blob/main/skills/bootstrap-sdk/SKILL.md) first to fork the target repository, clone it, set up/update the `specs` submodule, and create a branch. Then return here to continue with the implementation phases below.
 
 - **If already working inside an existing repo checkout**: Skip to [Implementation Workflow](#implementation-workflow) and proceed with the phases.
 
@@ -255,7 +255,7 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
 
 ### Phase 10: Packaging and Release
 
-Follow the [release-sdk](../release-sdk/SKILL.md) skill for versioning, naming, changelog format, CI/CD, and registry publishing conventions.
+Follow the [release-sdk](https://github.com/altertable-ai/altertable-workspace/blob/main/skills/release-sdk/SKILL.md) skill for versioning, naming, changelog format, CI/CD, and registry publishing conventions.
 
 Additionally for this SDK:
 
