@@ -1,18 +1,6 @@
----
-name: build-http-sdk
-description: Support skill providing HTTP client performance best practices for SDK development. Covers connection pooling, keep-alive, timeouts, and language-specific HTTP client recommendations. Reference this skill from other build-* skills during transport/reliability phases — not invoked standalone.
----
+# HTTP Transport Specification
 
-# Build HTTP SDK Skill
-
-## Purpose
-
-This is a **support skill** that defines HTTP client performance best practices and language-specific recommendations for building production-grade SDKs. Do not invoke this skill standalone — it is meant to be consulted as a dependency when implementing HTTP transport layers.
-
-**Referenced by:**
-
-- [build-lakehouse-sdk](../build-lakehouse-sdk/SKILL.md) (Phase 8: Transport and Reliability)
-- [build-product-analytics-sdk](../build-product-analytics-sdk/SKILL.md) (Phase 11: Transport)
+This specification defines HTTP client performance best practices and language-specific recommendations for building production-grade Altertable SDKs. Consult this spec when implementing HTTP transport layers for Lakehouse or Product Analytics clients.
 
 ## Core Principles
 

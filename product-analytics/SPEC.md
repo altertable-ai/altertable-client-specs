@@ -1,31 +1,10 @@
----
-name: build-product-analytics-sdk
-description: Defines how to build an Altertable Product Analytics SDK client in any programming language. Use when implementing or maintaining a product analytics SDK, including identity management, event tracking, sessions, storage, consent, and auto-capture. Covers JS/TS, Python, Swift, Kotlin, Ruby, Java, Go, PHP, and Rust.
----
+# Product Analytics SDK Specification
 
-# Build Product Analytics SDK Skill
-
-## Quick Start
-
-1. **Modifying the existing JS/TS SDK?** Read the reference implementation below, then jump to the relevant phase.
-2. **Creating a new web framework wrapper** (React, Vue, Svelte, etc.)? Add it to the monorepo under `packages/`. Use `altertable-react` as a pattern.
-3. **Creating a new language SDK** (Python, Swift, etc.)? Start at Phase 1. Study the JS reference implementation for behavior parity.
-
-## Purpose
-
-Use this skill to implement a language-idiomatic, open-source client for the Altertable Product Analytics API.
+This specification defines requirements for implementing a language-idiomatic, open-source client for the Altertable Product Analytics API.
 
 OpenAPI specification: https://api.altertable.ai/openapi/product-analytics.json
 
-Read this spec to manually define typed models and understand request/response schemas. Do not use OpenAPI codegen tools — define models by hand from the spec to keep them idiomatic and minimal.
-
-## Repo Setup
-
-**Before starting implementation:**
-
-- **If initializing a new SDK repo or updating to a new spec version**: Use [`bootstrap-sdk`](https://github.com/altertable-ai/altertable-workspace/blob/main/skills/bootstrap-sdk/SKILL.md) first to fork the target repository, clone it, set up/update the `specs` submodule, and create a branch. Then return here to continue with the implementation phases below.
-
-- **If already working inside an existing repo checkout**: Skip to [Implementation Workflow](#implementation-workflow) and proceed with the phases.
+Read the OpenAPI spec to manually define typed models and understand request/response schemas. Do not use OpenAPI codegen tools — define models by hand from the spec to keep them idiomatic and minimal.
 
 ## Reference Implementation
 
@@ -37,7 +16,7 @@ Key files:
 
 | File                                                   | Role                                                                                                                                                       |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sdk-constants.md` (this skill folder)                 | **SDK constants reference** — all config interfaces, defaults, and internal constants. Single source of truth for values referenced throughout this skill. |
+| `constants.md` (this spec folder)                      | **SDK constants reference** — all config interfaces, defaults, and internal constants. Single source of truth for values referenced throughout this spec. |
 | `packages/altertable-js/src/core.ts`                   | Main `Altertable` class — init, track, identify, alias, sessions, consent                                                                                  |
 | `packages/altertable-js/src/types.ts`                  | Payload types (`TrackPayload`, `IdentifyPayload`, `AliasPayload`)                                                                                          |
 | `packages/altertable-js/src/lib/requester.ts`          | Transport — beacon/fetch, URL construction, timeout                                                                                                        |
@@ -73,19 +52,7 @@ Use the tier to decide which phases below are required (marked per phase).
 6. Tests provide confidence in real runtime behavior.
 7. MIT license.
 
-## Input Contract
-
-Before implementation, collect or infer:
-
-- Target language/runtime/version
-- Package name and namespace
-- Platform tier (web / mobile / server)
-- CI target versions
-- Optional live-test credentials
-
-If not provided, choose ecosystem-standard defaults and document them.
-
-## Implementation Workflow
+## Requirements
 
 ### Phase 1: Scaffold
 
@@ -109,7 +76,7 @@ All three methods (`track`, `identify`, `alias`) accept an optional `timestamp` 
 
 **All tiers.**
 
-Implement a configurable client constructor. The full typed config interfaces (`WebConfig`, `MobileConfig`, `ServerConfig`) and their default values (`WEB_DEFAULTS`, `MOBILE_DEFAULTS`, `SERVER_DEFAULTS`) are defined in [sdk-constants.md](sdk-constants.md). Use those types and defaults as-is.
+Implement a configurable client constructor. The full typed config interfaces (`WebConfig`, `MobileConfig`, `ServerConfig`) and their default values (`WEB_DEFAULTS`, `MOBILE_DEFAULTS`, `SERVER_DEFAULTS`) are defined in [constants.md](constants.md). Use those types and defaults as-is.
 
 **Server tier**: no sessions, no storage, no auto-capture. The client is stateless. Identity fields (`distinct_id`, `anonymous_id`, `device_id`) are passed explicitly per call — this directly shapes the method signatures for `track`, `identify`, and `alias` on the server tier. See Phase 10 for the exact prototypes.
 
@@ -128,7 +95,7 @@ The SDK manages three identity concepts:
 | `anonymous_id` | `{PREFIX_ANONYMOUS_ID}-{uuid}` or `null`        | `PREFIX_ANONYMOUS_ID` | Previous anonymous ID after `identify()` — enables backend identity merge |
 | `session_id`   | `{PREFIX_SESSION_ID}-{uuid}`                    | `PREFIX_SESSION_ID`   | Groups events within an activity window                                   |
 
-See [sdk-constants.md](sdk-constants.md) for prefix values.
+See [constants.md](constants.md) for prefix values.
 
 #### State transitions
 
@@ -139,7 +106,7 @@ See [sdk-constants.md](sdk-constants.md) for prefix values.
 
 #### Reserved user IDs
 
-Reject IDs listed in `RESERVED_USER_IDS` (case-insensitive) and `RESERVED_USER_IDS_CASE_SENSITIVE` (case-sensitive). See [sdk-constants.md](sdk-constants.md) for the full lists.
+Reject IDs listed in `RESERVED_USER_IDS` (case-insensitive) and `RESERVED_USER_IDS_CASE_SENSITIVE` (case-sensitive). See [constants.md](constants.md) for the full lists.
 
 **Server tier**: No identity state. `distinct_id` and `anonymous_id` are explicit parameters on every call. Validate reserved IDs but don't manage transitions.
 
@@ -147,7 +114,7 @@ Reject IDs listed in `RESERVED_USER_IDS` (case-insensitive) and `RESERVED_USER_I
 
 **Web and mobile tiers only.**
 
-- Session TTL: `SESSION_EXPIRATION_TIME_MS` (see [sdk-constants.md](sdk-constants.md)).
+- Session TTL: `SESSION_EXPIRATION_TIME_MS` (see [constants.md](constants.md)).
 - Renew session (new `session_id`) on first event after TTL expires.
 - Persist `lastEventAt` timestamp to detect expiry across page loads / app restarts.
 - `session_id` is attached to every `track` payload.
@@ -170,7 +137,7 @@ Backends (with automatic fallback chain):
 
 Test storage availability before use. Log warnings on fallback.
 
-Storage key format: `{STORAGE_KEY_PREFIX}{STORAGE_KEY_SEPARATOR}{apiKey}{STORAGE_KEY_SEPARATOR}{environment}` (see [sdk-constants.md](sdk-constants.md) for values).
+Storage key format: `{STORAGE_KEY_PREFIX}{STORAGE_KEY_SEPARATOR}{apiKey}{STORAGE_KEY_SEPARATOR}{environment}` (see [constants.md](constants.md) for values).
 
 Support runtime storage migration when `persistence` config changes via `configure()`.
 
@@ -191,7 +158,7 @@ Mobile SDKs often run unit tests on Linux CI runners (e.g., GitHub Actions `ubun
 
 **Web and mobile tiers only.**
 
-Four states defined by the `TrackingConsentState` type (see [sdk-constants.md](sdk-constants.md)):
+Four states defined by the `TrackingConsentState` type (see [constants.md](constants.md)):
 
 | State       | Behavior                                           |
 | ----------- | -------------------------------------------------- |
@@ -211,7 +178,7 @@ Two queuing scenarios:
 1. **Pre-init queue**: `track()`, `identify()`, `alias()`, `page()`, `updateTraits()` called before `init()`. Buffer as commands, replay on init.
 2. **Consent queue**: Events generated while consent is `pending`/`dismissed`. Buffer as fully-built payloads, flush when consent becomes `granted`.
 
-Queue capacity: `MAX_QUEUE_SIZE` (see [sdk-constants.md](sdk-constants.md)). Drop oldest on overflow with a warning.
+Queue capacity: `MAX_QUEUE_SIZE` (see [constants.md](constants.md)). Drop oldest on overflow with a warning.
 
 For pre-init `track`/`page` calls, capture runtime context (timestamp, URL, viewport, referrer) at call time, not at replay time.
 
@@ -222,11 +189,11 @@ For pre-init `track`/`page` calls, capture runtime context (timestamp, URL, view
 When `autoCapture: true`:
 
 1. Track initial pageview on init.
-2. Poll URL every `AUTO_CAPTURE_INTERVAL_MS` to detect SPA navigation (see [sdk-constants.md](sdk-constants.md)).
+2. Poll URL every `AUTO_CAPTURE_INTERVAL_MS` to detect SPA navigation (see [constants.md](constants.md)).
 3. Listen for `popstate` and `hashchange` events.
 4. On URL change: update referrer to previous URL, fire `EVENT_PAGEVIEW` event.
 
-`EVENT_PAGEVIEW` properties: `PROPERTY_URL`, `PROPERTY_VIEWPORT`, `PROPERTY_REFERER`, plus extracted URL search params (see [sdk-constants.md](sdk-constants.md) for constant values).
+`EVENT_PAGEVIEW` properties: `PROPERTY_URL`, `PROPERTY_VIEWPORT`, `PROPERTY_REFERER`, plus extracted URL search params (see [constants.md](constants.md) for constant values).
 
 `init()` returns a cleanup function that removes listeners and stops polling.
 
@@ -256,7 +223,7 @@ When `autoCapture: true`:
 - `POST /track`
 - Attach context: `environment`, `device_id`, `distinct_id`, `anonymous_id`, `session_id`, `timestamp`.
 - `timestamp` is an optional ISO 8601 string or Unix epoch integer (seconds). If omitted, default to the current time as an ISO 8601 string.
-- Merge system properties (`PROPERTY_LIB`, `PROPERTY_LIB_VERSION`, `PROPERTY_RELEASE`, `PROPERTY_URL`) with user properties. User properties win on conflict. See [sdk-constants.md](sdk-constants.md) for key values.
+- Merge system properties (`PROPERTY_LIB`, `PROPERTY_LIB_VERSION`, `PROPERTY_RELEASE`, `PROPERTY_URL`) with user properties. User properties win on conflict. See [constants.md](constants.md) for key values.
 - Renew session before sending (web/mobile).
 - **Server tier**: `distinct_id` is required (no stored identity). `anonymous_id` and `device_id` are optional — pass them when you have them (e.g. forwarded from a client SDK), omit otherwise. `session_id` is never included (stateless).
 
@@ -392,19 +359,19 @@ No `session_id` in the payload.
 
 **All tiers.**
 
-**For HTTP client performance best practices**, including keep-alive, timeout defaults, and language-specific HTTP client recommendations, read and follow the [Build HTTP SDK Skill](../build-http-sdk/SKILL.md).
+**For HTTP client performance best practices**, including keep-alive, timeout defaults, and language-specific HTTP client recommendations, read and follow the [HTTP transport spec](../http/SPEC.md).
 
 #### Web tier
 
 1. Prefer `navigator.sendBeacon` (fire-and-forget, survives page unload).
 2. Fallback to `fetch` with `keepalive: true`.
-3. Request timeout: `REQUEST_TIMEOUT_MS` (see [sdk-constants.md](sdk-constants.md)).
+3. Request timeout: `REQUEST_TIMEOUT_MS` (see [constants.md](constants.md)).
 4. API key sent as query param: `?apiKey={key}`.
 
 #### Mobile tier
 
 1. Support background flush on app backgrounding.
-2. Request timeout: `MOBILE_REQUEST_TIMEOUT_MS` (see [sdk-constants.md](sdk-constants.md)).
+2. Request timeout: `MOBILE_REQUEST_TIMEOUT_MS` (see [constants.md](constants.md)).
 
 #### Server tier
 
@@ -433,7 +400,7 @@ Handle `environment-not-found` error specifically: log a warning with a link to 
 
 Implement the mandatory test scenarios defined in [`TEST_PLAN.md`](TEST_PLAN.md).
 
-Furthermore, verify serialized request payloads against the shared JSON fixtures in `skills/build-product-analytics-sdk/fixtures/`.
+Furthermore, verify serialized request payloads against the shared JSON fixtures in `fixtures/`.
 
 #### Unit tests
 
@@ -509,11 +476,7 @@ The example must match the user journey and API coverage of the [React reference
 
 For mobile SDKs, this should be a simple SwiftUI (iOS) or Jetpack Compose (Android) app. For web-framework wrappers, it should be a minimal project using that framework.
 
-### Phase 15: Packaging and Release
-
-Follow the [release-sdk](https://github.com/altertable-ai/altertable-workspace/blob/main/skills/release-sdk/SKILL.md) skill for versioning, naming, changelog format, CI/CD, and registry publishing conventions.
-
-Additionally for this SDK:
+### Packaging requirements
 
 1. README must include examples for all endpoints (`track`, `identify`, `alias`, `page`).
 2. For web tier: export `TrackingConsent` constants for consumer use.
@@ -533,21 +496,3 @@ Additionally for this SDK:
 - [ ] Runnable example app matching the React reference journey (web/mobile)
 - [ ] Package is publish-ready
 - [ ] MIT license and docs present
-
-## When Things Go Wrong
-
-### OpenAPI spec unavailable
-
-If the spec at `https://api.altertable.ai/openapi/product-analytics.json` cannot be fetched (timeout, 404, etc.), use the reference JS implementation's types as the source of truth for models. Document which spec version you based the models on.
-
-### Missing platform APIs
-
-Some platforms lack certain APIs (e.g., `crypto.randomUUID` in older runtimes, `navigator.sendBeacon` in non-browser environments). Always provide a polyfill or fallback:
-
-- **UUID generation**: Fall back to a manual v4 UUID implementation using `crypto.getRandomValues` or equivalent.
-- **Beacon transport**: Fall back to `fetch` with `keepalive: true`, then plain `fetch`.
-- **Storage APIs**: Follow the fallback chain defined in Phase 6. If all backends fail, use in-memory storage.
-
-### Tests cannot run
-
-Integration tests use the mock server and require no live credentials, so they should always run. If the test phase is still blocked (e.g., Docker unavailable in the runner, missing native Testcontainers bindings), skip with a clear `TODO` and a logged warning — do not silently omit test coverage. Document what is skipped and why in the PR description.

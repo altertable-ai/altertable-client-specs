@@ -4,7 +4,7 @@ Versioned API specifications for building Altertable open-source SDKs.
 
 ## Overview
 
-This repository contains the SDK build specifications — implementation guides, shared constants, test fixtures, and test plans — consumed by SDK repositories as a git submodule.
+This repository contains pure specifications: requirements, fixtures, constants, and test plans. SDK repositories consume it as a git submodule. Workspace skills read these specs and act on them.
 
 SDK repositories pin a specific version tag of this repo via a `specs/` submodule, ensuring every SDK is built against a known, reproducible spec snapshot.
 
@@ -12,9 +12,9 @@ SDK repositories pin a specific version tag of this repo via a `specs/` submodul
 
 | Spec | Description |
 |---|---|
-| [`build-lakehouse-sdk`](skills/build-lakehouse-sdk/SKILL.md) | Build a production-grade Altertable Lakehouse API client in any language |
-| [`build-product-analytics-sdk`](skills/build-product-analytics-sdk/SKILL.md) | Build an Altertable Product Analytics SDK with identity, event tracking, and auto-capture |
-| [`build-http-sdk`](skills/build-http-sdk/SKILL.md) | HTTP client best practices — connection pooling, keep-alive, timeouts (referenced by build-\* specs) |
+| [`lakehouse`](lakehouse/SPEC.md) | Production-grade Altertable Lakehouse API client — typed models, streaming, auth |
+| [`product-analytics`](product-analytics/SPEC.md) | Product Analytics SDK — identity, event tracking, sessions, storage, consent, auto-capture |
+| [`http`](http/SPEC.md) | HTTP transport requirements — connection pooling, keep-alive, timeouts, language-specific recommendations |
 
 ## Using This Repo as a Submodule
 
