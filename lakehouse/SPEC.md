@@ -1,23 +1,8 @@
----
-name: build-lakehouse-sdk
-description: Defines how to build a production-grade open-source Altertable Lakehouse API client in any programming language. Use when implementing or maintaining a Lakehouse SDK from the OpenAPI spec, including typed models, streaming query parsing, auth, and retries.
----
+# Lakehouse API Client Specification
 
-# Build Lakehouse Client SDK Skill
-
-## Purpose
-
-Use this skill to implement a language-idiomatic, strongly typed (or as strongly typed as idiomatic for the target language—best effort for dynamic or scripting languages), open-source client for the Altertable Lakehouse API.
+This specification defines requirements for implementing a language-idiomatic, strongly typed (or as strongly typed as idiomatic for the target language—best effort for dynamic or scripting languages), open-source client for the Altertable Lakehouse API.
 
 Primary OpenAPI specification reference: `https://api.altertable.ai/openapi/lakehouse.json`
-
-## Repo Setup
-
-**Before starting implementation:**
-
-- **If initializing a new SDK repo or updating to a new spec version**: Use [`bootstrap-sdk`](../bootstrap-sdk/SKILL.md) first to fork the target repository, clone it, set up/update the `specs` submodule, and create a branch. Then return here to continue with the implementation phases below.
-
-- **If already working inside an existing repo checkout**: Skip to [Implementation Workflow](#implementation-workflow) and proceed with the phases.
 
 ## Required Outcomes
 
@@ -28,19 +13,7 @@ Primary OpenAPI specification reference: `https://api.altertable.ai/openapi/lake
 5. Tests provide confidence in real runtime behavior.
 6. Project is modern OSS with MIT licensing.
 
-## Input Contract
-
-Before implementation, collect or infer:
-
-- Target language/runtime/version
-- Package name and namespace
-- Sync vs async style based on language best practices
-- CI target versions
-- Optional live-test credentials/settings
-
-If these are not provided, choose ecosystem-standard defaults and document them.
-
-## Implementation Workflow
+## Requirements
 
 Follow these phases in order.
 
@@ -199,7 +172,7 @@ All errors should include, when available:
 
 ### Phase 8: Transport and Reliability
 
-**For HTTP client performance best practices**, including keep-alive, timeout defaults, and language-specific HTTP client recommendations, read and follow the [Build HTTP SDK Skill](../build-http-sdk/SKILL.md).
+**For HTTP client performance best practices**, including keep-alive, timeout defaults, and language-specific HTTP client recommendations, read and follow the [HTTP transport spec](../http/SPEC.md).
 
 ### Phase 9: Testing
 
@@ -253,11 +226,7 @@ Implement layered tests:
 
 CI should always run lint + typecheck + unit + integration tests (mock-backed). No test should be skipped due to missing credentials.
 
-### Phase 10: Packaging and Release
-
-Follow the [release-sdk](../release-sdk/SKILL.md) skill for versioning, naming, changelog format, CI/CD, and registry publishing conventions.
-
-Additionally for this SDK:
+### Packaging requirements
 
 1. Include examples for all endpoints (`append`, `query`, `queryAll`, `getQuery`, `cancelQuery`, `upload`, `validate`) in the README.
 2. Verify docs match runtime behavior.
@@ -316,17 +285,3 @@ Only mark implementation complete when all are true:
 - [ ] Tests provide real-world confidence via the mock server (runs in both CI and local dev)
 - [ ] Package is publish-ready for primary registry
 - [ ] MIT license and OSS docs are present
-
-## When Things Go Wrong
-
-### OpenAPI spec unavailable
-
-If the spec at `https://api.altertable.ai/openapi/lakehouse.json` cannot be fetched (timeout, 404, etc.), use the endpoint reference in this skill as the source of truth for models. Document which spec version you based the models on.
-
-### Streaming parse failures
-
-If NDJSON streaming produces unexpected line formats, fail loudly with line index and raw content in the error. Never silently drop rows.
-
-### Tests cannot run
-
-Integration tests use the mock server and require no live credentials, so they should always run. If the test phase is still blocked (e.g., Docker unavailable in the runner, missing native Testcontainers bindings), skip with a clear `TODO` and a logged warning — do not silently omit test coverage. Document what is skipped and why in the PR description.

@@ -6,7 +6,7 @@ These JSON files define the canonical expected output for standard SDK operation
 
 1.  **Load the Fixture:** Parse the JSON file in your test suite.
 2.  **Execute:** Call your SDK method using the `input` parameters.
-3.  **Mock Context:** Ensure your test environment uses the fixed values (e.g., `timestamp`, `anonymousId`, `library.version`) shown in the `output` to match the fixture.
+3.  **Mock Context:** Ensure your test environment uses the fixed values (e.g., `timestamp`, `anonymous_id`, `$lib_version`) shown in the `output` to match the fixture.
 4.  **Assert:** Compare the serialized JSON payload of your SDK's request against the `output.payload`.
 
 ## Fixture Index
