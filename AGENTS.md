@@ -70,6 +70,7 @@ The `specs/` submodule in each SDK repo is read-only. All changes flow from this
 
 - Branch naming: `feat/<short-desc>` or `fix/<issue-number>-<short-desc>`
 - Commit messages: follow [Conventional Commits](https://www.conventionalcommits.org/)
+- PR titles must also follow Conventional Commits, because Altertable repositories squash-merge and release-please uses the merged PR title as the release signal. Repositories that use release-please must enforce this with a GitHub Actions check using `amannn/action-semantic-pull-request@v5` on `pull_request_target` for `opened`, `edited`, and `synchronize`.
 - PR description: state which SDKs are affected and whether it is a breaking change
 
 ## Links
