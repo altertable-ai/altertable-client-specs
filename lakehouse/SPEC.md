@@ -6,7 +6,7 @@ Primary OpenAPI specification reference: `https://api.altertable.ai/openapi/lake
 
 ## Required Outcomes
 
-1. Full endpoint coverage (`append`, `query` — both streamed and accumulated —, `query/:query_id` GET/DELETE, `upload`, `validate`).
+1. Full endpoint coverage: `append` (including optional synchronous completion and task polling), `GET /tasks/{task_id}`, `query` (streamed and accumulated), `GET`/`DELETE /query/{query_id}`, `upload`, `validate`, and `autocomplete`.
 2. Package is publishable to the target language's primary registry.
 3. Typed models and typed errors are first-class.
 4. `/query` exposes both streamed (with metadata, columns, and row iterator) and accumulated (with all rows) versions.
@@ -29,12 +29,14 @@ Follow these phases in order.
 
 1. Generate or define request/response models from OpenAPI.
 2. Preserve enums and nullable semantics:
-   - `ComputeSize`: `S | M | L`
+   - `ComputeSize`: `XS | S | M | L | XL`
    - `UploadFormat`: `csv | json | parquet`
    - `UploadMode`: `create | append | upsert | overwrite`
-3. Preserve `oneOf` behavior for `AppendRequest`:
-   - `{ Single: AppendPayload }` OR
-   - `{ Batch: AppendPayload[] }`
+   - `AppendErrorCode`: `invalid-data | incompatible-schema`
+   - `TaskStatus`: `pending | completed`
+   - `SessionKind` (for `QueryLog.client_interface`): `ArrowFlightSQL | HttpQuery | HttpCancel | HttpValidate | HttpExplain | HttpAutocomplete | Postgres`
+3. Preserve `oneOf` behavior for `AppendRequest` exactly as in OpenAPI: the JSON body is **either** a single `AppendPayload` object **or** a JSON array of `AppendPayload` objects.
+4. Model `AppendResponse` per OpenAPI: required `ok`; nullable `error_code` (`AppendErrorCode` or null); nullable `error_message`; nullable `task_id` (UUID) for polling via `GET /tasks/{task_id}`.
 
 ### Phase 3: Client Core
 
@@ -54,10 +56,17 @@ Implement typed methods for all operations:
 
    - `POST /append`
    - required query params: `catalog`, `schema`, `table`
+   - optional query param: `sync` — when true, the server waits for the append task to finish before returning
    - JSON request body: `AppendRequest`
-   - typed response: `AppendResponse`
+   - typed response: `AppendResponse` (`ok`, nullable `error_code`, nullable `error_message`, nullable `task_id`)
 
-2. `query`
+2. `getTask` (or `get_task`)
+
+   - `GET /tasks/{task_id}`
+   - path param: `task_id` (UUID), as returned by `append` when processing is asynchronous
+   - typed response: `TaskResponse` (`task_id`, `status` where `status` is `TaskStatus`)
+
+3. `query`
 
    Two versions must be provided:
 
@@ -81,21 +90,21 @@ Implement typed methods for all operations:
      - columns
      - all rows as an array/list/collection
 
-3. `upload`
+4. `upload`
 
    - `POST /upload`
    - required query params: `catalog`, `schema`, `table`, `format`, `mode`
    - conditional param: `primary_key` is required when `mode=upsert`
    - body: `application/octet-stream` bytes or stream
 
-4. `getQuery` (or `get_query`)
+5. `getQuery` (or `get_query`)
 
    - `GET /query/{query_id}`
    - path param: `query_id` (UUID)
    - typed response: `QueryLogResponse`
    - returns query log information including stats, progress, duration, error
 
-5. `cancelQuery` (or `cancel_query`)
+6. `cancelQuery` (or `cancel_query`)
 
    - `DELETE /query/{query_id}`
    - path param: `query_id` (UUID)
@@ -103,16 +112,23 @@ Implement typed methods for all operations:
    - typed response: `CancelQueryResponse`
    - cancels a running query
 
-6. `validate`
+7. `validate`
+
    - `POST /validate`
    - JSON body: `ValidateRequest` (must include `statement`)
    - typed response: `ValidateResponse`
+
+8. `autocomplete`
+
+   - `POST /autocomplete`
+   - JSON body: `AutocompleteRequest` (must include `statement`)
+   - typed response: `AutocompleteResponse`
 
 ### Phase 5: Streaming Contract (`query`)
 
 The streamed `query` method must parse the NDJSON response and return a structured result with:
 
-1. **metadata** - Query metadata (parsed from initial metadata line)
+1. **metadata** - Query metadata (parsed from the first JSON object line). Parsers must accept the fields defined in OpenAPI (non-exhaustive examples aligned with the published spec): `statement`, `rows_limit`, `rows_offset`, `init_time_ms`, `connections_errors`, `session_id`, `query_id`, `worker_slug`. Treat unknown keys as forward-compatible passthrough or opaque map entries where idiomatic.
 2. **columns** - Column schema information (parsed when schema row appears)
 3. **rows iterator** - An enumerator/iterator/async iterator/observable/channel to iterate over streamed rows
 
@@ -216,28 +232,36 @@ Implement layered tests:
 
    Cover at minimum:
 
-   - one streamed `query` call verifying metadata, columns, and row iteration
+   - one streamed `query` call verifying metadata (including documented metadata keys where the mock emits them), columns, and row iteration
    - one `queryAll` call verifying all rows are accumulated
    - one `getQuery` call verifying the query log response
    - one `cancelQuery` call verifying the cancellation response
    - one `upload` call (CSV or JSON payload)
    - one `validate` call
    - one `append` call
+   - one `getTask` call when the mock exposes a task id (or append returns `task_id`), verifying `TaskResponse`
+   - one `autocomplete` call verifying suggestions and `connections_errors`
 
 CI should always run lint + typecheck + unit + integration tests (mock-backed). No test should be skipped due to missing credentials.
 
 ### Packaging requirements
 
-1. Include examples for all endpoints (`append`, `query`, `queryAll`, `getQuery`, `cancelQuery`, `upload`, `validate`) in the README.
+1. Include examples for all operations (`append`, `getTask`, `query`, `queryAll`, `getQuery`, `cancelQuery`, `upload`, `validate`, `autocomplete`) in the README.
 2. Verify docs match runtime behavior.
 
 ## Endpoint Reference (Minimal)
 
 ### `POST /append`
 
-- Query: `catalog`, `schema`, `table`
+- Query: `catalog`, `schema`, `table`, optional `sync`
 - Body: `AppendRequest`
-- Response: `AppendResponse { ok: boolean, error_code?: "invalid-data" | null }`
+- Response: `AppendResponse` — required `ok`; nullable `error_code` (`invalid-data` \| `incompatible-schema` \| null); nullable `error_message`; nullable `task_id` (UUID) for `GET /tasks/{task_id}`
+
+### `GET /tasks/{task_id}`
+
+- Path: `task_id` (UUID)
+- Response: `TaskResponse` with `task_id` and `status` (`pending` \| `completed`)
+- Status codes: 200, 400 (invalid task id), 401
 
 ### `POST /query`
 
@@ -245,7 +269,7 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
 - Response: NDJSON stream
 - Key request fields:
   - required: `statement`
-  - optional: `catalog`, `schema`, `session_id`, `compute_size`, `sanitize`, `limit`, `offset`, `timezone`, `ephemeral`, `visible`, `requested_by`, `query_id`
+  - optional: `catalog`, `schema`, `session_id`, `compute_size`, `sanitize`, `limit`, `offset`, `timezone`, `ephemeral`, `visible`, `requested_by`, `query_id`, `cache`
 
 ### `POST /upload`
 
@@ -257,7 +281,7 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
 
 - Path: `query_id` (UUID)
 - Response: `QueryLogResponse` containing query log information
-- Returns: query metadata including `uuid`, `start_time`, `end_time`, `duration_ms`, `query`, `session_id`, `client_interface`, `error`, `stats` (with `caching`, `memory`, `scan`), `progress`, `visible`, `requested_by`, `user_agent`
+- Returns: query metadata including `uuid`, `start_time`, `end_time`, `duration_ms`, `query`, `session_id`, `client_interface` (`SessionKind`), `error`, `stats` (with `caching`, `memory`, `scan`), `progress`, `visible`, `requested_by`, `user_agent`
 - Status codes: 200 (success), 401 (auth required), 404 (query not found)
 
 ### `DELETE /query/{query_id}`
@@ -273,11 +297,17 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
 - Body: `ValidateRequest` with required `statement`
 - Response: `ValidateResponse` with `valid`, `statement`, `connections_errors`, optional `error`
 
+### `POST /autocomplete`
+
+- Body: `AutocompleteRequest` with required `statement`; optional `catalog`, `schema`, `session_id`, `max_suggestions`
+- Response: `AutocompleteResponse` with `suggestions`, `statement`, `connections_errors`
+- Status codes: 200, 400, 401
+
 ## Acceptance Checklist
 
 Only mark implementation complete when all are true:
 
-- [ ] All 6 endpoints implemented and documented (`append`, `query` (streamed and accumulated), `getQuery`, `cancelQuery`, `upload`, `validate`)
+- [ ] All operations in Phase 4 implemented and documented (`append`, `getTask`, `query` streamed and accumulated, `getQuery`, `cancelQuery`, `upload`, `validate`, `autocomplete`)
 - [ ] Streamed `query` returns metadata, columns, and row iterator; accumulated `queryAll` returns metadata, columns, and all rows
 - [ ] Typed errors are comprehensive and actionable
 - [ ] Auth supports direct/env/provider patterns
