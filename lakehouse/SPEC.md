@@ -156,7 +156,8 @@ The client must support all of the following credential input patterns:
 1. **Direct credentials** — `username` + `password` accepted in the client constructor/config; the SDK encodes them into the Basic token internally.
 2. **Pre-encoded token** — accept a raw pre-encoded `Basic` token string directly for callers who already hold the encoded value.
 3. **Environment variable discovery** — auto-discover from the environment:
-   - `ALTERTABLE_USERNAME` + `ALTERTABLE_PASSWORD` (encode on the fly), or
+   - `ALTERTABLE_LAKEHOUSE_USERNAME` + `ALTERTABLE_LAKEHOUSE_PASSWORD`
+     (encode on the fly), or
    - `ALTERTABLE_BASIC_AUTH_TOKEN` (use directly as the pre-encoded value)
 
 Implementation requirements:
