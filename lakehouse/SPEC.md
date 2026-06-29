@@ -199,8 +199,7 @@ Implement layered tests:
 
    - model serialization
    - request construction
-   - auth behavior and redaction, including environment discovery from
-     `ALTERTABLE_LAKEHOUSE_USERNAME` + `ALTERTABLE_LAKEHOUSE_PASSWORD`
+   - auth behavior and redaction
    - retries/timeouts
    - input precondition checks
 
