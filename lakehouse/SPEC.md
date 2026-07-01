@@ -150,8 +150,8 @@ The `/query` stream line grammar is:
 
 1. **Line 1: metadata object.** The metadata object must be parsed before exposing rows. SDKs must accept at least these fields:
    - `statement` (string) - the executed SQL statement after trimming/transpilation.
-   - `rows_limit` (integer or null) - `500` when legacy `sanitize=true`, the explicit `limit` when provided, otherwise null.
-   - `rows_offset` (integer or null) - `0` when legacy `sanitize=true`, the explicit `offset` when provided, otherwise null.
+   - `rows_limit` (integer or null) - applied row limit, or null when no limit is set.
+   - `rows_offset` (integer or null) - applied row offset, or null when no offset is set.
    - `init_time_ms` (integer) - server initialization latency in milliseconds; the backend emits a positive integer.
    - `connections_errors` (object mapping string to string) - connection warnings/errors collected for the response.
    - `session_id` (UUID string) - HTTP query session id.
