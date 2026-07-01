@@ -140,11 +140,48 @@ Implement typed methods for all operations:
 
 ### Phase 5: Streaming Contract (`query`)
 
-The streamed `query` method must parse the NDJSON response and return a structured result with:
+The streamed `query` method must parse the `application/x-ndjson` response line by line:
 
-1. **metadata** - Query metadata (parsed from the first JSON object line). Parsers must accept the fields defined in OpenAPI (non-exhaustive examples aligned with the published spec): `statement`, `rows_limit`, `rows_offset`, `init_time_ms`, `connections_errors`, `session_id`, `query_id`, `worker_slug`. Treat unknown keys as forward-compatible passthrough or opaque map entries where idiomatic.
-2. **columns** - Column schema information (parsed when schema row appears)
-3. **rows iterator** - An enumerator/iterator/async iterator/observable/channel to iterate over streamed rows
+1. **Line 1 is metadata** - Query metadata object.
+2. **Line 2 is columns or stream error** - Column schema array, or a single `{ "error": string }` object.
+3. **Lines 3-N are rows or stream error** - Row arrays until completion, or a single `{ "error": string }` object if streaming fails.
+
+The `/query` stream line grammar is:
+
+1. **Line 1: metadata object.** The metadata object must be parsed before exposing rows. SDKs must accept at least these fields:
+   - `statement` (string) - the executed SQL statement after trimming/transpilation.
+   - `rows_limit` (integer or null) - applied row limit, or null when no limit is set.
+   - `rows_offset` (integer or null) - applied row offset, or null when no offset is set.
+   - `init_time_ms` (integer) - server initialization latency in milliseconds; the backend emits a positive integer.
+   - `connections_errors` (object mapping string to string) - connection warnings/errors collected for the response.
+   - `session_id` (UUID string) - HTTP query session id.
+   - `query_id` (UUID string) - query id, either caller-provided or server-generated.
+   - `worker_slug` (string) - worker that executed the query.
+2. **Line 2: columns array or stream error.**
+   - On success, line 2 is an array of column objects. Each column object has `name` (string) and `type` (string). `type` values are DuckDB type names, for example `INTEGER`, `VARCHAR`, `STRUCT(...)`, `LIST`, or `MAP`.
+   - If execution or schema serialization fails before columns can be emitted, line 2 is a single JSON object with an `error` string, for example `{"error":"Catalog Error: Table with name unknown_table does not exist!"}`.
+3. **Lines 3-N: row arrays or stream error.**
+   - On success, each line is one row serialized as a JSON array. Row values correspond to the columns array by index.
+   - If row conversion or streaming fails after columns have been emitted, a later line is a single JSON object with an `error` string.
+
+If any post-metadata line is a JSON object with an `error` string, SDKs must surface it as a typed query stream error, include line context, and stop normal row iteration. Do not treat this object as metadata, columns, or a row.
+
+Example successful stream:
+
+```jsonl
+{"statement":"select count(*), service_name from opentelemetry.logs group by 2 order by 1 desc limit 10","rows_limit":null,"rows_offset":null,"init_time_ms":553,"connections_errors":{},"session_id":"019f1d9b-84fd-7d11-b66e-a2aeaffcee8c","query_id":"019f1d9b-8b0e-74b0-a746-e14cbaa49bf8","worker_slug":"api-worker-l-example"}
+[{"name":"count_star()","type":"BIGINT"},{"name":"service_name","type":"VARCHAR"}]
+[61867103,"checkout-service"]
+[61755771,"orders-api"]
+[3114696,"metrics-agent"]
+[2990257,"web-app"]
+[2559045,null]
+[1131408,"catalog-compactor"]
+[555005,"customer-portal"]
+[468498,"staging-worker"]
+[448385,"storage-plugin"]
+[301218,"background-jobs"]
+```
 
 The accumulated `queryAll` method should:
 
@@ -155,6 +192,7 @@ Requirements:
 
 - Include line index/context in parsing failures.
 - Never silently ignore malformed lines.
+- Detect JSON objects with an `error` string after metadata as in-stream query errors.
 - Preserve backpressure semantics of the language runtime (for streamed version).
 
 ### Phase 6: Authentication
@@ -189,6 +227,7 @@ Implement a typed error hierarchy at minimum:
 - `TimeoutError`
 - `SerializationError`
 - `ParseError`
+- `QueryError` (backend-emitted `{ "error": string }` inside a `/query` NDJSON stream)
 - `ApiError` (unexpected status fallback)
 - `ConfigurationError`
 
@@ -287,10 +326,15 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
 ### `POST /query`
 
 - Body: `QueryRequest`
-- Response: NDJSON stream
+- Response: NDJSON stream (`application/x-ndjson`)
 - Key request fields:
   - required: `statement`
   - optional: `catalog`, `schema`, `session_id`, `compute_size`, `sanitize`, `limit`, `offset`, `timezone`, `ephemeral`, `visible`, `requested_by`, `query_id`, `cache`
+- Stream layout:
+  - line 1: metadata object (`statement`, nullable `rows_limit`, nullable `rows_offset`, `init_time_ms`, `connections_errors`, `session_id`, `query_id`, `worker_slug`)
+  - line 2: columns array of `{ "name": string, "type": string }`, or a single `{ "error": string }` object if an error occurs before columns are emitted
+  - lines 3-N: positional row arrays, or a single `{ "error": string }` object if an error occurs during streaming
+- Pre-stream validation errors return normal HTTP error statuses; in-stream execution errors can still arrive inside a `200 OK` NDJSON response after metadata has been emitted.
 
 ### `POST /upload`
 
