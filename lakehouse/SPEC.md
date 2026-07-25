@@ -329,7 +329,13 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
 - Response: NDJSON stream (`application/x-ndjson`)
 - Key request fields:
   - required: `statement`
-  - optional: `catalog`, `schema`, `session_id`, `compute_size`, `sanitize`, `limit`, `offset`, `timezone`, `ephemeral`, `visible`, `requested_by`, `query_id`, `cache`
+  - optional: `catalog`, `schema`, `session_id`, `compute_size`, `dialect`,
+    `sanitize`, `limit`, `offset`, `timezone`, `ephemeral`, `format`,
+    `requested_by`, `query_id`, `cache`
+    - `dialect` is the source SQL dialect to transpile before execution; when
+      omitted, the server uses DuckDB.
+    - `format` selects the response representation: `default`, `csv`,
+      `jsonl`, or `parquet`; when omitted, the server uses `default`.
 - Stream layout:
   - line 1: metadata object (`statement`, nullable `rows_limit`, nullable `rows_offset`, `init_time_ms`, `connections_errors`, `session_id`, `query_id`, `worker_slug`)
   - line 2: columns array of `{ "name": string, "type": string }`, or a single `{ "error": string }` object if an error occurs before columns are emitted
