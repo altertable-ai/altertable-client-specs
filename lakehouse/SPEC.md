@@ -32,7 +32,7 @@ Follow these phases in order.
 
 1. Generate or define request/response models from OpenAPI.
 2. Preserve enums and nullable semantics:
-   - `ComputeSize`: `XS | S | M | L | XL`
+   - `ComputeSize`: `XS | S | M | L | XL | 2XL | 3XL | 4XL | AUTO`
    - `UploadMode`: `create | append | overwrite`
    - `AppendErrorCode`: `invalid-data | incompatible-schema`
    - `TaskStatus`: `pending | completed`
@@ -332,6 +332,9 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
   - optional: `catalog`, `schema`, `session_id`, `compute_size`, `dialect`,
     `sanitize`, `limit`, `offset`, `timezone`, `ephemeral`, `format`,
     `requested_by`, `query_id`, `cache`
+    - `compute_size` is a `ComputeSize` (`XS`, `S`, `M`, `L`, `XL`, `2XL`,
+      `3XL`, `4XL`, or `AUTO` to infer it). `AUTO` cannot be combined with an
+      explicit `session_id`.
     - `dialect` is the source SQL dialect to transpile before execution; when
       omitted, the server uses DuckDB.
     - `format` selects the response representation: `default`, `csv`,
