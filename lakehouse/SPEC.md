@@ -33,7 +33,7 @@ Follow these phases in order.
 1. Generate or define request/response models from OpenAPI.
 2. Preserve enums and nullable semantics:
    - `ComputeSize`: `XS | S | M | L | XL | 2XL | 3XL | 4XL | AUTO`
-   - `UploadMode`: `create | append | overwrite`
+   - `UploadMode`: `create | append | create_append | overwrite`
    - `AppendErrorCode`: `invalid-data | incompatible-schema`
    - `TaskStatus`: `pending | completed`
    - `SessionKind` (for `QueryLog.client_interface`): `ArrowFlightSQL | HttpQuery | HttpCancel | HttpValidate | HttpExplain | HttpAutocomplete | Postgres`
@@ -96,7 +96,8 @@ Implement typed methods for all operations:
 
    - `POST /upload`
    - required query params: `catalog`, `schema`, `table`, `mode`
-   - `mode` is an `UploadMode` (`create`, `append`, or `overwrite`)
+   - `mode` is an `UploadMode` (`create`, `append`, `create_append`, or
+     `overwrite`). `create_append` creates the table if missing, else appends.
    - body: raw file bytes or stream; set `Content-Type` when the format is
      known (CSV, JSON, or Parquet). When omitted, the server infers format from
      magic bytes.
@@ -105,11 +106,25 @@ Implement typed methods for all operations:
 
    - `POST /upsert`
    - required query params: `catalog`, `schema`, `table`, `primary_key`
-   - `primary_key` is the column name used to match existing rows before
-     updating them
+   - optional query param: `cursor_field`
+   - `primary_key` is the primary key column name, or a comma-separated list of
+     columns, used to match and update existing rows
+   - `cursor_field` is an optional cursor column name, or a comma-separated list
+     of columns, where on a primary key collision the row with the higher cursor
+     value wins
+   - an empty or blank column list in either parameter is rejected with `400`
    - body: raw file bytes or stream; set `Content-Type` when the format is
      known (CSV, JSON, or Parquet). When omitted, the server infers format from
      magic bytes.
+   - cursor arbitration rules SDKs should document and test:
+     - the comparison is strict, so a row whose cursor ties the stored row
+       leaves that row unchanged
+     - a composite `cursor_field` compares column by column, left to right
+     - `NULL` compares as the lowest value, so a null cursor never overwrites a
+       stored non-null one
+     - without `cursor_field`, the last matching row of the payload wins
+     - when every column belongs to `primary_key`, matched rows are left
+       untouched and only new rows are inserted
 
 6. `getQuery` (or `get_query`)
 
@@ -290,11 +305,13 @@ Implement layered tests:
    - one `queryAll` call verifying all rows are accumulated
    - one `getQuery` call verifying the query log response
    - one `cancelQuery` call verifying the cancellation response
-   - one `upload` call using `mode=create`, `append`, or `overwrite` (CSV, JSON
-     or Parquet payload with an appropriate `Content-Type`, or rely on
-     server-side format inference)
+   - one `upload` call using `mode=create`, `append`, `create_append`, or
+     `overwrite` (CSV, JSON or Parquet payload with an appropriate
+     `Content-Type`, or rely on server-side format inference)
    - one `upsert` call with `primary_key` (CSV, JSON or Parquet payload with an
      appropriate `Content-Type`, or rely on server-side format inference)
+   - one `upsert` call with a comma-separated `primary_key` and `cursor_field`,
+     when the mock accepts both parameters
    - one `validate` call
    - one `append` call
    - one `getTask` call when the mock exposes a task id (or append returns `task_id`), verifying `TaskResponse`
@@ -348,7 +365,8 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
 ### `POST /upload`
 
 - Query: `catalog`, `schema`, `table`, `mode`
-- Mode: `create` | `append` | `overwrite`
+- Mode: `create` | `append` | `create_append` | `overwrite`, where
+  `create_append` creates the table if missing, else appends
 - Body: binary file content
 - Format: not a query parameter. The server infers CSV, JSON, or Parquet from
   the `Content-Type` header when present, otherwise from magic bytes in the
@@ -356,11 +374,19 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
 
 ### `POST /upsert`
 
-- Query: `catalog`, `schema`, `table`, `primary_key`
+- Query: `catalog`, `schema`, `table`, `primary_key`, optional `cursor_field`
+- `primary_key`: primary key column name, or a comma-separated list of columns,
+  used to match and update existing rows
+- `cursor_field`: optional cursor column name, or a comma-separated list of
+  columns, where on a primary key collision the row with the higher cursor value
+  wins. The comparison is strict, a composite list compares column by column
+  from left to right, and `NULL` compares as the lowest value.
 - Body: binary file content
 - Format: not a query parameter. The server infers CSV, JSON, or Parquet from
   the `Content-Type` header when present, otherwise from magic bytes in the
   payload.
+- Status codes: 200, 400 (missing `primary_key`, or an empty or blank column
+  list in `primary_key` or `cursor_field`), 401
 
 ### `GET /query/{query_id}`
 
