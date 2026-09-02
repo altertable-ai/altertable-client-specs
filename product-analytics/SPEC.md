@@ -180,6 +180,12 @@ Two queuing scenarios:
 
 Queue capacity: `MAX_QUEUE_SIZE` (see [CONSTANTS.md](CONSTANTS.md)). Drop oldest on overflow with a warning.
 
+When flushing, drain queued payloads per endpoint (`/track`, `/identify`, and
+`/alias`) in FIFO chunks no larger than `maxBatchSize`. `maxBatchSize` is a
+web/mobile configuration option with a default of `20`; values below `1` must
+be clamped to `1`. A flush may therefore issue multiple requests for one
+endpoint.
+
 For pre-init `track`/`page` calls, capture runtime context (timestamp, URL, viewport, referrer) at call time, not at replay time.
 
 ### Phase 9: Auto-Capture
@@ -376,7 +382,9 @@ No `session_id` in the payload.
 #### Server tier
 
 1. API key sent via `X-API-Key` header.
-2. Support batch payloads natively.
+2. Support batch payloads natively. Do not expose or enforce a `maxBatchSize`
+   client configuration: server callers and their backend queueing
+   implementations choose how many payloads to submit in each batch request.
 
 ### Phase 12: Error Model
 

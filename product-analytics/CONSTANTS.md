@@ -64,6 +64,7 @@ Storage key format: `atbl.{apiKey}.{environment}`
 | `onError`          | `(error: AltertableError) => void \| null` | `null`  | Callback invoked on SDK errors (must not throw)                                   |
 | `debug`            | `boolean`                 | `false`                   | Enable verbose console logging                                                    |
 | `requestTimeout`   | `number`                  | `REQUEST_TIMEOUT_MS`      | HTTP request timeout in milliseconds                                              |
+| `maxBatchSize`     | `number`                  | `20`                      | Maximum payloads per request per endpoint; values below `1` are clamped to `1`   |
 
 **`WEB_DEFAULTS`** (canonical values):
 
@@ -78,6 +79,7 @@ release:          null
 onError:          null
 debug:            false
 requestTimeout:   5000
+maxBatchSize:     20
 ```
 
 ### MobileConfig
@@ -93,6 +95,7 @@ requestTimeout:   5000
 | `debug`           | `boolean`              | `false`                     | Enable verbose logging                                             |
 | `requestTimeout`  | `number`               | `MOBILE_REQUEST_TIMEOUT_MS` | HTTP request timeout in milliseconds                               |
 | `flushOnBackground` | `boolean`            | `true`                      | Flush queued events when app moves to background                   |
+| `maxBatchSize`    | `number`               | `20`                        | Maximum payloads per request per endpoint; values below `1` are clamped to `1` |
 
 **`MOBILE_DEFAULTS`** (canonical values):
 
@@ -106,6 +109,7 @@ onError:            null
 debug:              false
 requestTimeout:     10000
 flushOnBackground:  true
+maxBatchSize:       20
 ```
 
 ### ServerConfig
@@ -119,7 +123,6 @@ flushOnBackground:  true
 | `onError`        | `(error: AltertableError) => void \| null` | `null` | Callback invoked on SDK errors                              |
 | `debug`          | `boolean`               | `false`                     | Enable verbose logging                                            |
 | `requestTimeout` | `number`                | `5000`                      | HTTP request timeout in milliseconds                              |
-| `maxBatchSize`   | `number`                | `100`                       | Maximum number of events per batch request                        |
 
 **`SERVER_DEFAULTS`** (canonical values):
 
@@ -131,7 +134,6 @@ release:        null
 onError:        null
 debug:          false
 requestTimeout: 5000
-maxBatchSize:   100
 ```
 
 ## Tracking Consent States
