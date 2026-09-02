@@ -75,15 +75,30 @@ Every SDK must implement these scenarios in its test suite. While implementation
   - `queueSize` increases.
 
 ### Scenario: Batch Flush
+**Web and mobile tiers only.**
+
 - **Input:**
-  1. Queue contains 5 events.
+  1. Queue contains 21 track payloads.
   2. Network is restored.
   3. Flush triggered (manual or auto-timer).
 - **Expectation:**
-  - Events are batched into a single (or few) HTTP requests.
+  - With the default `maxBatchSize` of `20`, the SDK sends two `/track`
+    requests: the first has 20 payloads and the second has 1.
+  - No request for a given endpoint contains more than `maxBatchSize`
+    payloads; payload order is preserved across the resulting requests.
+  - A configured value below `1` is clamped to `1` before flushing.
   - On 200 OK: Events are removed from the queue.
   - On 5xx Error: Events are kept in the queue for retry (with backoff).
   - On 4xx Error (e.g., 400 Bad Request): Events are dropped (to prevent infinite loops) and an error is logged.
+
+### Scenario: Server Batch Passthrough
+**Server tier only.**
+
+- **Input:** Call a server batch method with an array of 101 valid payloads.
+- **Expectation:**
+  - The SDK submits the caller-supplied array as one request and does not
+    split or reject it based on client-side batch-size policy.
+  - Server configuration does not expose `maxBatchSize`.
 
 ## 4. Configuration
 
