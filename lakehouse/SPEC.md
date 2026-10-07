@@ -38,7 +38,8 @@ Follow these phases in order.
    - `TaskStatus`: `pending | completed`
    - `SessionKind` (for `QueryLog.client_interface`): `ArrowFlightSQL | HttpQuery | HttpCancel | HttpValidate | HttpExplain | HttpAutocomplete | Postgres`
 3. Preserve `oneOf` behavior for `AppendRequest` exactly as in OpenAPI: the JSON body is **either** a single `AppendPayload` object **or** a JSON array of `AppendPayload` objects.
-4. Model `AppendResponse` per OpenAPI: required `ok`; nullable `error_code` (`AppendErrorCode` or null); nullable `error_message`; nullable `task_id` (UUID) for polling via `GET /tasks/{task_id}`.
+4. Model `QueryRequest.params` as `SqlBindParams`, a union of **either** a JSON object mapping placeholder names to values (named, `$name`) **or** a JSON array of values (positional, `$1`, `$2`, ...). Values must be JSON scalars (`null`, boolean, number, string); expose this as the language's natural union or overloads and reject nested arrays/objects at the type level where the language allows it.
+5. Model `AppendResponse` per OpenAPI: required `ok`; nullable `error_code` (`AppendErrorCode` or null); nullable `error_message`; nullable `task_id` (UUID) for polling via `GET /tasks/{task_id}`.
 
 ### Phase 3: Client Core
 
@@ -75,7 +76,7 @@ Implement typed methods for all operations:
    a. `query` (streamed)
 
    - `POST /query`
-   - JSON body: `QueryRequest` (must include `statement`)
+   - JSON body: `QueryRequest` (must include `statement`; may include bind `params`)
    - content type: `application/x-ndjson`
    - returns a structured result containing:
      - metadata
@@ -265,7 +266,8 @@ Implement layered tests:
 
 1. Unit tests
 
-   - model serialization
+   - model serialization, including named (object) and positional (array)
+     `QueryRequest.params`
    - request construction
    - auth behavior and redaction
    - retries/timeouts
@@ -303,6 +305,9 @@ Implement layered tests:
 
    - one streamed `query` call verifying metadata (including documented metadata keys where the mock emits them), columns, and row iteration
    - one `queryAll` call verifying all rows are accumulated
+   - one `query` call with named `params` and one with positional `params`,
+     verifying the values are sent in the JSON body, when the mock accepts
+     `params`
    - one `getQuery` call verifying the query log response
    - one `cancelQuery` call verifying the cancellation response
    - one `upload` call using `mode=create`, `append`, `create_append`, or
@@ -348,7 +353,7 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
   - required: `statement`
   - optional: `catalog`, `schema`, `session_id`, `compute_size`, `dialect`,
     `sanitize`, `limit`, `offset`, `timezone`, `ephemeral`, `format`,
-    `requested_by`, `query_id`, `cache`
+    `requested_by`, `query_id`, `cache`, `params`
     - `compute_size` is a `ComputeSize` (`XS`, `S`, `M`, `L`, `XL`, `2XL`,
       `3XL`, `4XL`, or `AUTO` to infer it). `AUTO` cannot be combined with an
       explicit `session_id`.
@@ -356,6 +361,18 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
       omitted, the server uses DuckDB.
     - `format` selects the response representation: `default`, `csv`,
       `jsonl`, or `parquet`; when omitted, the server uses `default`.
+    - `params` binds values to placeholders in `statement`: an object for
+      named placeholders (`$name`) or an array for positional placeholders
+      (`$1`, `$2`, ...). Values must be JSON scalars (`null`, boolean, number,
+      string). An empty object or array behaves like omitting `params`.
+      SDKs must send values as JSON and never interpolate them into
+      `statement` client-side. Server-side constraints (returned as `400`):
+      - arrays or objects as values are rejected (`params.<name>` or
+        `params[<index>]` in the error message)
+      - `params` cannot be combined with a non-DuckDB `dialect`
+      - the JSON-encoded `params` must be at most 8 KiB
+      Statements with `params` must be a single statement; binding errors
+      (unknown placeholder, type mismatch) surface as query errors.
 - Stream layout:
   - line 1: metadata object (`statement`, nullable `rows_limit`, nullable `rows_offset`, `init_time_ms`, `connections_errors`, `session_id`, `query_id`, `worker_slug`)
   - line 2: columns array of `{ "name": string, "type": string }`, or a single `{ "error": string }` object if an error occurs before columns are emitted
@@ -422,6 +439,7 @@ Only mark implementation complete when all are true:
       `getTask`, `query` streamed and accumulated, `getQuery`, `cancelQuery`,
       `upload`, `upsert`, `validate`, `autocomplete`)
 - [ ] Streamed `query` returns metadata, columns, and row iterator; accumulated `queryAll` returns metadata, columns, and all rows
+- [ ] `query` and `queryAll` accept named and positional bind `params` and send them in the JSON body (never interpolated into `statement`)
 - [ ] Typed errors are comprehensive and actionable
 - [ ] Auth supports direct/env/provider patterns
 - [ ] Retries/timeouts/transport hooks are configurable
