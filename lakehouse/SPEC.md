@@ -347,7 +347,7 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
 - Key request fields:
   - required: `statement`
   - optional: `catalog`, `schema`, `session_id`, `compute_size`, `dialect`,
-    `sanitize`, `limit`, `offset`, `timezone`, `ephemeral`, `format`,
+    `sanitize`, `limit`, `offset`, `timezone`, `ephemeral`, `format`, `params`,
     `requested_by`, `query_id`, `cache`
     - `compute_size` is a `ComputeSize` (`XS`, `S`, `M`, `L`, `XL`, `2XL`,
       `3XL`, `4XL`, or `AUTO` to infer it). `AUTO` cannot be combined with an
@@ -356,6 +356,8 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
       omitted, the server uses DuckDB.
     - `format` selects the response representation: `default`, `csv`,
       `jsonl`, or `parquet`; when omitted, the server uses `default`.
+    - `params` contains JSON scalar bind values. It is either an object for
+      named `$name` placeholders or an array for positional `$1` placeholders.
 - Stream layout:
   - line 1: metadata object (`statement`, nullable `rows_limit`, nullable `rows_offset`, `init_time_ms`, `connections_errors`, `session_id`, `query_id`, `worker_slug`)
   - line 2: columns array of `{ "name": string, "type": string }`, or a single `{ "error": string }` object if an error occurs before columns are emitted
