@@ -36,9 +36,14 @@ Follow these phases in order.
    - `UploadMode`: `create | append | create_append | overwrite`
    - `AppendErrorCode`: `invalid-data | incompatible-schema`
    - `TaskStatus`: `pending | completed`
-   - `SessionKind` (for `QueryLog.client_interface`): `ArrowFlightSQL | HttpQuery | HttpCancel | HttpValidate | HttpExplain | HttpAutocomplete | Postgres`
+   - `SessionKind` (for `QueryLog.client_interface`): `ArrowFlightSQL | HTTP | Postgres`
 3. Preserve `oneOf` behavior for `AppendRequest` exactly as in OpenAPI: the JSON body is **either** a single `AppendPayload` object **or** a JSON array of `AppendPayload` objects.
 4. Model `AppendResponse` per OpenAPI: required `ok`; nullable `error_code` (`AppendErrorCode` or null); nullable `error_message`; nullable `task_id` (UUID) for polling via `GET /tasks/{task_id}`.
+5. Model `QueryLogResponse` per OpenAPI as the `QueryLog` fields merged with an
+   optional `QueryProgress` at the same level, not under a nested key: while the
+   query runs, the response may include top-level `percentage` (double),
+   `rows_processed`, and `total_rows` (non-negative integers). The three fields
+   are present together or absent together; finished queries omit them.
 
 ### Phase 3: Client Core
 
@@ -131,7 +136,9 @@ Implement typed methods for all operations:
    - `GET /query/{query_id}`
    - path param: `query_id` (UUID)
    - typed response: `QueryLogResponse`
-   - returns query log information including stats, progress, duration, error
+   - returns query log information including stats, duration, error, and, while
+     the query runs, top-level progress fields (`percentage`, `rows_processed`,
+     `total_rows`)
 
 7. `cancelQuery` (or `cancel_query`)
 
@@ -265,7 +272,8 @@ Implement layered tests:
 
 1. Unit tests
 
-   - model serialization
+   - model serialization, including a `QueryLogResponse` with top-level
+     progress fields and one without them
    - request construction
    - auth behavior and redaction
    - retries/timeouts
@@ -394,7 +402,38 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
 
 - Path: `query_id` (UUID)
 - Response: `QueryLogResponse` containing query log information
-- Returns: query metadata including `uuid`, `start_time`, `end_time`, `duration_ms`, `query`, `session_id`, `client_interface` (`SessionKind`), `error`, `stats` (with `caching`, `memory`, `scan`), `progress`, `visible`, `requested_by`, `user_agent`
+- Returns: query metadata including `uuid`, `start_time`, `end_time`, `duration_ms`, `query`, `session_id`, `client_interface` (`SessionKind`), `error`, `stats` (with `caching`, `memory`, `scan`), `visible`, `requested_by`, `user_agent`, `threads`, `fingerprint`, `session_catalog`, `session_schema`
+- Progress: while the query runs, the same object also carries top-level
+  `percentage`, `rows_processed`, and `total_rows`. There is no `progress` key.
+  Progress is omitted once the query finishes or when its session is no longer
+  reachable, so clients treat missing fields as "no estimate", not as an error.
+  A query submitted with its own `query_id` can return 404 until its log is
+  recorded; clients polling for progress retry instead of failing. Example for a
+  running query:
+
+  ```json
+  {
+    "uuid": "03dc0291-ca25-439b-ab3c-4d76b6cd0892",
+    "duration_ms": null,
+    "start_time": "2026-10-21T12:47:00.38332771Z",
+    "end_time": null,
+    "query": "SELECT count(DISTINCT \"WatchID\") AS w FROM clickbench.main.hits",
+    "client_interface": "HTTP",
+    "error": null,
+    "visible": true,
+    "stats": null,
+    "requested_by": "someone",
+    "user_agent": "ua",
+    "session_id": "01a15e80-2126-72b1-9293-3ad1199ea0b2",
+    "threads": 32,
+    "fingerprint": null,
+    "session_catalog": null,
+    "session_schema": null,
+    "percentage": 30.001622776575903,
+    "rows_processed": 30000872,
+    "total_rows": 99997499
+  }
+  ```
 - Status codes: 200 (success), 401 (auth required), 404 (query not found)
 
 ### `DELETE /query/{query_id}`
