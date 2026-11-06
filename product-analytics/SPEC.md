@@ -88,6 +88,16 @@ All tiers keep event names and custom properties, including nested fields named 
 
 Browser JavaScript and its React and React Native clients, Swift, Kotlin/Android, Python, and Ruby expose audience mode. Analytics adapters currently expose product collection only; reject an unsupported mode from an untyped caller before touching storage or changing delivery state. Do not infer support merely because a wrapper uses the core SDK internally.
 
+## Environment selection and migration
+
+Use a Product Analytics API key bound to the target environment. The backend resolves the environment from that key; the SDK must not parse the key to infer an environment.
+
+Retain existing public `environment` parameters, options, and payload members for source compatibility, with language-native deprecation guidance. Accept and ignore them for routing in both product and audience modes. Changing the option must not change delivery, identity, or queue namespaces. Do not add environment validation to deprecated inputs.
+
+Do not generate a top-level `environment` field. Strip it at the final serialization boundary for every track, identify, and alias request, including raw batches, restored queue records, and records returned by caller hooks. Preserve nested business properties or traits named `environment`, and do not mutate caller-owned dictionaries.
+
+Callers must replace an unbound legacy API key with an environment-bound Product Analytics key before upgrading. Legacy keys require an explicit payload environment on the current backend and cannot deliver through SDKs that omit it. Remove the deprecated option after migrating the key; use separate bound keys for separate environments. For key-scoped stores, a replacement key must not inherit the old key's identity or queue. Callers replacing an unbound key should flush pending events with the previous SDK before upgrading, since the new SDK cannot deliver using that old key. Existing option values may still be needed once to locate old persisted data, as described below.
+
 ## Requirements
 
 ### Phase 1: Scaffold
@@ -173,7 +183,11 @@ Backends (with automatic fallback chain):
 
 Test storage availability before use. Log warnings on fallback.
 
-Storage key format: `{STORAGE_KEY_PREFIX}{STORAGE_KEY_SEPARATOR}{apiKey}{STORAGE_KEY_SEPARATOR}{environment}` (see [CONSTANTS.md](CONSTANTS.md) for values).
+Use API-key-scoped storage independent of the deprecated environment option (see [CONSTANTS.md](CONSTANTS.md)). Apply this to mobile identity/session storage and persistent queues as well as web storage.
+
+When upgrading an environment-scoped store, inspect only the old namespace selected by the originally supplied environment, or its old `production` default when omitted. Do not scan other environments or keys. Existing destination data wins: never merge identities or queues. Copy before removing the selected legacy record, and make storage failures recoverable without replaying a stale queue or resetting identity. Never delete the source after a failed destination write; if source removal fails, surface the failure before initialization can deliver duplicate data. A key change must isolate both identity and queued records.
+
+Older stores without API-key or environment ownership metadata cannot be assigned to an original key reliably. If migrating such a store, let the first upgraded product client claim it once with a durable owner marker; audience clients must never claim it. Document that callers must initialize the intended existing key first. The owner marker and destination precedence must prevent another key from importing the same data or a drained queue from being replayed. Preserve the source when a migration write fails, and retry only for its recorded owner.
 
 Support runtime storage migration when `persistence` config changes via `configure()`.
 
@@ -263,7 +277,7 @@ When `autoCapture: true`:
 - `timestamp` — ISO 8601 string or Unix epoch integer (seconds); defaults to current time
 
 - `POST /track`
-- Attach context: `environment`, `device_id`, `distinct_id`, `anonymous_id`, `session_id`, `timestamp`.
+- Attach context: `device_id`, `distinct_id`, `anonymous_id`, `session_id`, `timestamp`.
 - `timestamp` is an optional ISO 8601 string or Unix epoch integer (seconds). If omitted, default to the current time as an ISO 8601 string.
 - Merge system properties (`PROPERTY_LIB`, `PROPERTY_LIB_VERSION`, `PROPERTY_RELEASE`, `PROPERTY_URL`) with user properties. User properties win on conflict. See [CONSTANTS.md](CONSTANTS.md) for key values.
 - Renew session before sending (web/mobile).
@@ -343,7 +357,6 @@ All endpoints accept JSON. Web tier sends the API key as a query param; server t
 {
   "timestamp": "2025-06-15T14:30:00.000Z",
   "event": "checkout_completed",
-  "environment": "production",
   "device_id": "device-550e8400-e29b-41d4-a716-446655440000",
   "distinct_id": "user-42",
   "anonymous_id": "anonymous-7c9e6679-7425-40de-944b-e07fc1f90ae7",
@@ -364,7 +377,6 @@ No `session_id` in the payload.
 ```json
 {
   "timestamp": "2025-06-15T14:30:00.000Z",
-  "environment": "production",
   "device_id": "device-550e8400-e29b-41d4-a716-446655440000",
   "distinct_id": "user-42",
   "anonymous_id": "anonymous-7c9e6679-7425-40de-944b-e07fc1f90ae7",
@@ -379,7 +391,6 @@ No `session_id` in the payload.
 ```json
 {
   "timestamp": "2025-06-15T14:30:00.000Z",
-  "environment": "production",
   "device_id": "device-550e8400-e29b-41d4-a716-446655440000",
   "distinct_id": "anonymous-7c9e6679-7425-40de-944b-e07fc1f90ae7",
   "anonymous_id": null,
@@ -436,7 +447,7 @@ Type guards: `isAltertableError()`, `isApiError()`, `isNetworkError()`.
 
 `onError` config callback receives SDK errors. Never let SDK errors crash the host application.
 
-Handle `environment-not-found` error specifically: log a warning with a link to the dashboard.
+Handle `environment-not-found` through the normal API error path. Do not imply that a deprecated environment option can repair an unbound or incorrectly bound key.
 
 ### Phase 13: Testing
 
@@ -496,7 +507,8 @@ Cover at minimum:
 - one `identify` call verifying the response shape
 - one `alias` call verifying the response shape
 - one call with an invalid API key verifying a `401` error response
-- one call with an invalid environment verifying an `environment-not-found` error response
+- deprecated environment values ignored and omitted from all serialized endpoint payloads
+- a request using an environment-bound key, plus API error handling for an unbound legacy key; mock acceptance alone does not prove backend persistence
 
 CI should always run lint + typecheck + unit + integration tests (mock-backed). No test should be skipped due to missing credentials.
 

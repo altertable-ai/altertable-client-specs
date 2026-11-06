@@ -9,7 +9,9 @@ Canonical constant values for the Altertable Product Analytics SDK. Use these ex
 | `STORAGE_KEY_PREFIX`   | `"atbl"` |
 | `STORAGE_KEY_SEPARATOR`| `"."`    |
 
-Storage key format: `atbl.{apiKey}.{environment}`
+Web storage keys: `atbl.v2.{apiKey}.session` and `atbl.v2.{apiKey}.events`.
+
+Legacy web keys: `atbl.{apiKey}.{environment}` and `atbl.{apiKey}.{environment}.events`. The deprecated option is used only to select these migration sources, defaulting to `production` when omitted. Mobile SDKs retain their native key encoding and use an API-key-scoped versioned namespace with equivalent migration rules.
 
 `STORAGE_KEY_TEST` is built as `atbl.check` — used to verify storage availability.
 
@@ -54,10 +56,10 @@ Storage key format: `atbl.{apiKey}.{environment}`
 
 | Option             | Type                      | Default                   | Description                                                                       |
 | ------------------ | ------------------------- | ------------------------- | --------------------------------------------------------------------------------- |
-| `apiKey`           | `string`                  | _(required)_              | Public API key (`pk_live_…` or `pk_test_…`)                                       |
+| `apiKey`           | `string`                  | _(required)_              | Environment-bound Product Analytics API key                                       |
 | `mode` | `"product" \| "audience"` | `"product"` | Collection policy, fixed for the client lifecycle where supported |
 | `baseUrl`          | `string`                  | `https://api.altertable.ai` | Override the API base URL                                                       |
-| `environment`      | `string`                  | `"production"`            | Analytics environment name                                                        |
+| `environment` | `string` | _(deprecated)_ | Accepted and ignored for routing; use an environment-bound Product Analytics API key |
 | `persistence`      | `"localStorage+cookie" \| "localStorage" \| "sessionStorage" \| "cookie" \| "memory"` | `"localStorage+cookie"` | Storage backend |
 | `trackingConsent`  | `TrackingConsentState`    | `"granted"`               | Initial tracking consent state                                                    |
 | `autoCapture`      | `boolean`                 | `true`                    | Automatically capture pageviews on SPA navigation                                 |
@@ -73,7 +75,6 @@ Storage key format: `atbl.{apiKey}.{environment}`
 apiKey:           (none — required)
 mode:             "product"
 baseUrl:          "https://api.altertable.ai"
-environment:      "production"
 persistence:      "localStorage+cookie"
 trackingConsent:  "granted"
 autoCapture:      true
@@ -88,10 +89,10 @@ maxBatchSize:     20
 
 | Option            | Type                   | Default                     | Description                                                        |
 | ----------------- | ---------------------- | --------------------------- | ------------------------------------------------------------------ |
-| `apiKey`          | `string`               | _(required)_                | Public API key                                                     |
+| `apiKey`          | `string`               | _(required)_                | Environment-bound Product Analytics API key                        |
 | `mode` | `"product" \| "audience"` | `"product"` | Collection policy, fixed for the client lifecycle where supported |
 | `baseUrl`         | `string`               | `https://api.altertable.ai` | Override the API base URL                                          |
-| `environment`     | `string`               | `"production"`              | Analytics environment name                                         |
+| `environment` | `string` | _(deprecated)_ | Accepted and ignored for routing; use an environment-bound Product Analytics API key |
 | `trackingConsent` | `TrackingConsentState` | `"granted"`                 | Initial tracking consent state                                     |
 | `release`         | `string \| null`       | `null`                      | App release/version string attached to every event as `$release`  |
 | `onError`         | `(error: AltertableError) => void \| null` | `null` | Callback invoked on SDK errors                               |
@@ -106,7 +107,6 @@ maxBatchSize:     20
 apiKey:             (none — required)
 mode:             "product"
 baseUrl:            "https://api.altertable.ai"
-environment:        "production"
 trackingConsent:    "granted"
 release:            null
 onError:            null
@@ -120,10 +120,10 @@ maxBatchSize:       20
 
 | Option           | Type                    | Default                     | Description                                                       |
 | ---------------- | ----------------------- | --------------------------- | ----------------------------------------------------------------- |
-| `apiKey`         | `string`                | _(required)_                | Public API key (`pk_live_…` or `pk_test_…`)                       |
+| `apiKey`         | `string`                | _(required)_                | Environment-bound Product Analytics API key                       |
 | `mode` | `"product" \| "audience"` | `"product"` | Collection policy, fixed for the client lifecycle where supported |
 | `baseUrl`        | `string`                | `https://api.altertable.ai` | Override the API base URL                                         |
-| `environment`    | `string`                | `"production"`              | Analytics environment name                                        |
+| `environment` | `string` | _(deprecated)_ | Accepted and ignored for routing; use an environment-bound Product Analytics API key |
 | `release`        | `string \| null`        | `null`                      | App release/version string attached to every event as `$release` |
 | `onError`        | `(error: AltertableError) => void \| null` | `null` | Callback invoked on SDK errors                              |
 | `debug`          | `boolean`               | `false`                     | Enable verbose logging                                            |
@@ -135,7 +135,6 @@ maxBatchSize:       20
 apiKey:         (none — required)
 mode:             "product"
 baseUrl:        "https://api.altertable.ai"
-environment:    "production"
 release:        null
 onError:        null
 debug:          false
