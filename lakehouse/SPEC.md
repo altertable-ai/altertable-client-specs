@@ -144,7 +144,6 @@ Implement typed methods for all operations:
 
    - `DELETE /query/{query_id}`
    - path param: `query_id` (UUID)
-   - required query param: `session_id`
    - typed response: `CancelQueryResponse`
    - cancels a running query
 
@@ -439,10 +438,9 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
 ### `DELETE /query/{query_id}`
 
 - Path: `query_id` (UUID)
-- Query: `session_id` (required)
 - Response: `CancelQueryResponse` with `cancelled` (boolean) and `message` (string)
-- Status codes: 200 (success), 400 (invalid request), 401 (auth required), 404 (session not found)
-- Cancels a running query associated with the given session
+- Status codes: 200 (success), 400 (invalid request), 401 (auth required), 404 (query not found)
+- Cancels a running query
 
 ### `POST /validate`
 
