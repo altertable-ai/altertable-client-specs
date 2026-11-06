@@ -144,10 +144,6 @@ Implement typed methods for all operations:
 
    - `DELETE /query/{query_id}`
    - path param: `query_id` (UUID)
-   - no query params: the query id alone identifies the query
-   - SDKs that already take a `session_id` argument keep accepting it as an
-     optional, deprecated argument so existing callers still compile, and stop
-     sending it
    - typed response: `CancelQueryResponse`
    - cancels a running query
 
@@ -442,12 +438,9 @@ CI should always run lint + typecheck + unit + integration tests (mock-backed). 
 ### `DELETE /query/{query_id}`
 
 - Path: `query_id` (UUID)
-- Query: none. A `session_id` query parameter, which older clients send, is
-  accepted and ignored.
 - Response: `CancelQueryResponse` with `cancelled` (boolean) and `message` (string)
-- Status codes: 200 (success), 400 (invalid `query_id`), 401 (auth required),
-  404 (query not found: unknown, already finished, or not run by the caller)
-- Cancels a running query by its id, whichever session runs it
+- Status codes: 200 (success), 400 (invalid request), 401 (auth required), 404 (query not found)
+- Cancels a running query
 
 ### `POST /validate`
 
