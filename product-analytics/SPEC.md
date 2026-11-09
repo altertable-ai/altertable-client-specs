@@ -86,7 +86,7 @@ All tiers keep event names and custom properties, including nested fields named 
 
 ### Supported interfaces
 
-Browser JavaScript and its React client, Swift, Kotlin/Android, Python, and Ruby expose audience mode. The React Native wrapper and analytics adapters currently expose product collection only; reject an unsupported mode from an untyped caller before touching storage or changing delivery state. Do not infer support merely because a wrapper uses the core SDK internally.
+Browser JavaScript and its React and React Native clients, Swift, Kotlin/Android, Python, and Ruby expose audience mode. Analytics adapters currently expose product collection only; reject an unsupported mode from an untyped caller before touching storage or changing delivery state. Do not infer support merely because a wrapper uses the core SDK internally.
 
 ## Requirements
 
