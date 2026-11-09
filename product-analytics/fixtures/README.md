@@ -20,3 +20,13 @@ For batch-flush fixtures, assert the sequence of endpoint requests, each request
 | `track_null_properties.json` | Verifies that `null` input properties result in an empty object `{}`. |
 | `alias_basic.json` | Standard alias call linking IDs. |
 | `batch_flush_max_size.json` | Web/mobile default batch-size chunking and payload order. |
+
+## Audience fixtures
+
+| File | Description |
+| :--- | :--- |
+| `audience_track_basic.json` | Public audience track with reserved context reduction and retained business properties. |
+| `audience_raw_batch.json` | Server raw batch with conflicting modes and legacy identity fields. |
+| `audience_urls.json` | Representative URL/referrer inputs and final values. |
+
+Apply each fixture through the SDK's public client. Supply its timestamp where the public API accepts one; otherwise assert a valid current timestamp and compare the remaining fields. Use real loopback HTTP for cookie/redirect behavior as described in the test plan. Wrappers without audience support must reject the option before side effects rather than run these as supported-mode fixtures.

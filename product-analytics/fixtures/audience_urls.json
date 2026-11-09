@@ -1,0 +1,40 @@
+{
+  "description": "Representative audience URL and referrer reduction",
+  "cases": [
+    {
+      "input": "https://user:password@example.com/docs?token=private#secret",
+      "url": "https://example.com/docs",
+      "referer": "https://example.com"
+    },
+    {
+      "input": "https://example.com",
+      "url": "https://example.com/",
+      "referer": "https://example.com"
+    },
+    {
+      "input": "/relative?token=private",
+      "url": null,
+      "referer": null
+    },
+    {
+      "input": "javascript:private",
+      "url": null,
+      "referer": null
+    },
+    {
+      "input": "not a URL",
+      "url": null,
+      "referer": null
+    },
+    {
+      "input": 42,
+      "url": null,
+      "referer": null
+    },
+    {
+      "input": null,
+      "url": null,
+      "referer": null
+    }
+  ]
+}

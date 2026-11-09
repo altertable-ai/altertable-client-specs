@@ -1,0 +1,36 @@
+{
+  "description": "Audience public track preserves custom properties and reduces reserved context",
+  "config": {
+    "mode": "audience"
+  },
+  "input": {
+    "event": "Docs Opened",
+    "timestamp": "2026-11-09T10:00:00.000Z",
+    "properties": {
+      "$lib": "fixture-client",
+      "$lib_version": "1.0.0",
+      "section": "docs",
+      "environment": "business-value",
+      "$url": "https://user:password@example.com/docs?token=private#secret",
+      "$referer": "https://search.example/private?token=private#secret",
+      "$viewport": "1234x987",
+      "$release": "fixture-release"
+    }
+  },
+  "output": {
+    "payload": {
+      "mode": "audience",
+      "event": "Docs Opened",
+      "timestamp": "2026-11-09T10:00:00.000Z",
+      "properties": {
+        "$lib": "fixture-client",
+        "$lib_version": "1.0.0",
+        "section": "docs",
+        "environment": "business-value",
+        "$url": "https://example.com/docs",
+        "$referer": "https://search.example",
+        "$release": "fixture-release"
+      }
+    }
+  }
+}

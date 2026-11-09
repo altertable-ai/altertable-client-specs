@@ -52,6 +52,38 @@ Use the tier to decide which phases below are required (marked per phase).
 6. Tests provide confidence in real runtime behavior.
 7. MIT license.
 
+## Product and audience collection
+
+Product analytics remains the default. SDKs that expose `mode` accept `product` or `audience` at initialization. Keep the mode fixed for a client lifecycle: reject a runtime mode change before applying any accompanying updates. JavaScript may start a fresh lifecycle through `init()`; other SDKs create a new client. Do not migrate identities or buffered events between modes.
+
+The phases below describe product-mode defaults. Audience mode applies the following restrictions instead of product identity, persistence, and automatic-context behavior; transport errors, batching limits, and application-controlled consent still apply.
+
+### Audience request contract
+
+Use an environment-bound Product Analytics API key. Send only `POST /track` records with `mode: "audience"`, `event`, `timestamp`, and `properties`. Do not send top-level `distinct_id`, `anonymous_id`, `device_id`, `session_id`, or `environment`, including null or shared placeholder identifiers.
+
+Ignore `identify`, `alias`, and existing trait-update calls before validating supplied identity values. They must not change state or issue network requests. Retain idiomatic diagnostic behavior without reporting a successful identity request.
+
+The client owns the mode. Per-event options, raw batch dictionaries, and caller transforms cannot select another mode or restore restricted top-level fields. Apply the audience policy after transforms and immediately before queuing or delivery. A product client must not accept a raw record's `mode: "audience"` as permission to change its collection policy.
+
+### Storage and transport
+
+Do not read, hydrate, migrate, write, or clear persistent product identity, consent, or event stores from an audience client. Override persistence settings with memory-only state, including custom storage adapters. Unsent audience events do not survive client disposal or an app/page restart. Internal ephemeral state must never become wire identity.
+
+Audience transports must not store or replay response cookies, share cookie or user-credential caches with product clients, or attach ambient credentials. Enforce this on normal sends, retries, and each redirect or exit delivery that the platform supports. Browser requests use `credentials: "omit"` and `referrerPolicy: "no-referrer"`; avoid an exit transport that cannot honor those settings. Keep required API-key authentication. Preserve product transport behavior.
+
+For web/mobile consent, pending and dismissed events wait only in memory. Denied consent discards buffered events and prevents delivery; granting consent may deliver the current in-memory buffer. A failed delivery must not reintroduce events that were cleared by denial or disposal. Supply consent on each new audience lifecycle rather than restoring product consent.
+
+### Context and caller data
+
+Limit automatically added context to SDK metadata, optional application release, and page/screen context. Reduce `$url` to an absolute HTTP(S) origin plus path, with credentials, query, and fragment removed. Reduce `$referer` to origin only. Missing, non-string, relative, or unsupported URLs become null. Remove `$viewport` and do not expand URL query parameters into separate event properties.
+
+Keep event names and custom properties, including nested fields named `environment`, caller-owned and unchanged except for these reserved context fields. Do not attach automatic browser, OS, device, IP, or location details. Event names, custom properties, and URL paths can contain personal data; callers must choose or sanitize them accordingly. Server SDK requests describe the server's HTTP context, not an end user's browser or unique visitor identity.
+
+### Supported interfaces
+
+Browser JavaScript and its React client, Swift, Kotlin/Android, Python, and Ruby expose audience mode. The React Native wrapper and analytics adapters currently expose product collection only; reject an unsupported mode from an untyped caller before touching storage or changing delivery state. Do not infer support merely because a wrapper uses the core SDK internally.
+
 ## Requirements
 
 ### Phase 1: Scaffold
