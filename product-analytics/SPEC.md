@@ -92,7 +92,7 @@ Browser JavaScript and its React and React Native clients, Swift, Kotlin/Android
 
 Use a Product Analytics API key bound to the target environment. The backend resolves the environment from that key; the SDK must not parse the key to infer an environment.
 
-Retain existing public `environment` parameters, options, and payload members for source compatibility, with language-native deprecation guidance. Accept and ignore them for routing in both product and audience modes. Changing the option must not change delivery, identity, or queue namespaces. Do not add environment validation to deprecated inputs.
+Keep accepting existing `environment` parameters, options, and payload members so existing calls keep working, and ignore them in both product and audience modes. Do not expose the ignored value back to callers (for example as a readable property defaulting to `production`), since a stale value is more confusing than a removed one. Use compile-time deprecation annotations where the language has them; server SDKs do not log runtime deprecation warnings. Changing the option must not change delivery, identity, or queue namespaces. Do not add environment validation to deprecated inputs.
 
 Do not generate a top-level `environment` field. Strip it at the final serialization boundary for every track, identify, and alias request, including raw batches, restored queue records, and records returned by caller hooks. Preserve nested business properties or traits named `environment`, and do not mutate caller-owned dictionaries.
 
