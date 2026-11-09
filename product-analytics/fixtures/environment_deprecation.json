@@ -1,0 +1,22 @@
+{
+  "description": "Deprecated routing environment omitted at final serialization without changing business properties or caller input",
+  "input": {
+    "environment": "staging",
+    "event": "Button Clicked",
+    "distinct_id": "user_123",
+    "properties": {
+      "environment": "business-value"
+    },
+    "timestamp": "2023-01-01T12:00:00.000Z"
+  },
+  "output": {
+    "payload": {
+      "event": "Button Clicked",
+      "distinct_id": "user_123",
+      "properties": {
+        "environment": "business-value"
+      },
+      "timestamp": "2023-01-01T12:00:00.000Z"
+    }
+  }
+}

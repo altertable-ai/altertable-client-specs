@@ -150,3 +150,23 @@ Every SDK must implement these scenarios in its test suite. While implementation
 ### Scenario: Unsupported wrappers fail before side effects
 - Through an untyped caller, pass audience or an unknown mode to a product-only wrapper. Observe no storage reads/writes, listeners, or HTTP requests before rejection.
 - Reject an invalid mode update without changing the current delivery/consent behavior; subsequent automatic product delivery still succeeds.
+
+## 7. Environment Deprecation
+
+### Scenario: Compatible Inputs and Wire Omission
+- **Input:** Initialize with a deprecated environment value, then exercise track, identify, alias, trait updates, and raw batch APIs where supported. Repeat in product and audience modes. Retain old positional/named constructor and event calls.
+- **Expectation:** Calls remain source compatible. The environment option does not affect routing. All final request records omit top-level `environment`; hooks and raw dictionaries cannot restore it. Nested properties/traits named `environment` survive. Caller-owned inputs remain unchanged. The configured API key is delivered unchanged. Server SDKs neither expose the ignored value nor write anything to logs or stderr for it.
+- **Fixture:** `environment_deprecation.json` provides a representative raw record before and after final serialization; apply the same omission to every endpoint.
+
+### Scenario: Persistence Migration and Isolation (Web/Mobile)
+- **Input:** Seed the selected legacy environment namespace, an unrelated environment namespace, and a different API key's namespace. Initialize using the same key and old option; repeat with no option to select the legacy production default.
+- **Expectation:** Restore the selected identity and queue only. Current destination data takes precedence without merging. Unrelated stores remain intact. Removing/changing the deprecated option after migration does not reset identity or select another queue. Changing API keys isolates both stores. Legacy queued top-level environment fields never reach the wire.
+- **Failures:** Exercise failed destination writes and source removal; retry must preserve identity and avoid lost or replayed queued records. No source deletion follows a failed copy.
+
+### Scenario: Unowned Legacy Storage (Where Applicable)
+- **Input:** Seed a legacy global identity and queue without key metadata. Initialize the intended existing product key, drain the queue, restart, then initialize a second key.
+- **Expectation:** A durable one-time owner claim preserves the old state for the first key only. Existing destination data wins as a group. Restart cannot replay the drained legacy queue. Audience initialization does not claim or read the source. Failed migration writes remain recoverable for the recorded owner.
+
+### Scenario: Required Key Migration
+- **Input:** Deliver with an environment-bound Product Analytics key and no payload environment. Separately test the backend's rejection of an unbound legacy key without an environment.
+- **Expectation:** The bound key selects its environment. Surface rejection through normal API error handling. Never reinsert a deprecated environment value as a fallback. Report live backend persistence separately from mock-server checks.

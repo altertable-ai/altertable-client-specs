@@ -20,6 +20,10 @@ For batch-flush fixtures, assert the sequence of endpoint requests, each request
 | `track_null_properties.json` | Verifies that `null` input properties result in an empty object `{}`. |
 | `alias_basic.json` | Standard alias call linking IDs. |
 | `batch_flush_max_size.json` | Web/mobile default batch-size chunking and payload order. |
+| `environment_deprecation.json` | Top-level routing field omission while preserving business properties. |
+
+`environment_deprecation.json` exercises the final transport boundary: pass its input as a raw record or return it from a supported hook. Assert the output and that the input is unchanged. Apply the same omission to identify and alias records, and repeat in audience mode where supported.
+
 
 ## Audience fixtures
 
