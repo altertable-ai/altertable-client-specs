@@ -155,7 +155,7 @@ Every SDK must implement these scenarios in its test suite. While implementation
 
 ### Scenario: Compatible Inputs and Wire Omission
 - **Input:** Initialize with a deprecated environment value, then exercise track, identify, alias, trait updates, and raw batch APIs where supported. Repeat in product and audience modes. Retain old positional/named constructor and event calls.
-- **Expectation:** Calls remain source compatible. The environment option does not affect routing. All final request records omit top-level `environment`; hooks and raw dictionaries cannot restore it. Nested properties/traits named `environment` survive. Caller-owned inputs remain unchanged. The configured API key is delivered unchanged. The client does not expose the ignored environment value, and server SDKs write nothing to logs or stderr for it.
+- **Expectation:** Calls remain source compatible. The environment option does not affect routing. All final request records omit top-level `environment`; hooks and raw dictionaries cannot restore it. Nested properties/traits named `environment` survive. Caller-owned inputs remain unchanged. The configured API key is delivered unchanged. Server SDKs neither expose the ignored value nor write anything to logs or stderr for it.
 - **Fixture:** `environment_deprecation.json` provides a representative raw record before and after final serialization; apply the same omission to every endpoint.
 
 ### Scenario: Persistence Migration and Isolation (Web/Mobile)
