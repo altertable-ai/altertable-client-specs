@@ -55,6 +55,7 @@ Storage key format: `atbl.{apiKey}.{environment}`
 | Option             | Type                      | Default                   | Description                                                                       |
 | ------------------ | ------------------------- | ------------------------- | --------------------------------------------------------------------------------- |
 | `apiKey`           | `string`                  | _(required)_              | Public API key (`pk_live_…` or `pk_test_…`)                                       |
+| `mode` | `"product" \| "audience"` | `"product"` | Collection policy, fixed for the client lifecycle where supported |
 | `baseUrl`          | `string`                  | `https://api.altertable.ai` | Override the API base URL                                                       |
 | `environment`      | `string`                  | `"production"`            | Analytics environment name                                                        |
 | `persistence`      | `"localStorage+cookie" \| "localStorage" \| "sessionStorage" \| "cookie" \| "memory"` | `"localStorage+cookie"` | Storage backend |
@@ -70,6 +71,7 @@ Storage key format: `atbl.{apiKey}.{environment}`
 
 ```
 apiKey:           (none — required)
+mode:             "product"
 baseUrl:          "https://api.altertable.ai"
 environment:      "production"
 persistence:      "localStorage+cookie"
@@ -87,6 +89,7 @@ maxBatchSize:     20
 | Option            | Type                   | Default                     | Description                                                        |
 | ----------------- | ---------------------- | --------------------------- | ------------------------------------------------------------------ |
 | `apiKey`          | `string`               | _(required)_                | Public API key                                                     |
+| `mode` | `"product" \| "audience"` | `"product"` | Collection policy, fixed for the client lifecycle where supported |
 | `baseUrl`         | `string`               | `https://api.altertable.ai` | Override the API base URL                                          |
 | `environment`     | `string`               | `"production"`              | Analytics environment name                                         |
 | `trackingConsent` | `TrackingConsentState` | `"granted"`                 | Initial tracking consent state                                     |
@@ -101,6 +104,7 @@ maxBatchSize:     20
 
 ```
 apiKey:             (none — required)
+mode:             "product"
 baseUrl:            "https://api.altertable.ai"
 environment:        "production"
 trackingConsent:    "granted"
@@ -117,6 +121,7 @@ maxBatchSize:       20
 | Option           | Type                    | Default                     | Description                                                       |
 | ---------------- | ----------------------- | --------------------------- | ----------------------------------------------------------------- |
 | `apiKey`         | `string`                | _(required)_                | Public API key (`pk_live_…` or `pk_test_…`)                       |
+| `mode` | `"product" \| "audience"` | `"product"` | Collection policy, fixed for the client lifecycle where supported |
 | `baseUrl`        | `string`                | `https://api.altertable.ai` | Override the API base URL                                         |
 | `environment`    | `string`                | `"production"`              | Analytics environment name                                        |
 | `release`        | `string \| null`        | `null`                      | App release/version string attached to every event as `$release` |
@@ -128,6 +133,7 @@ maxBatchSize:       20
 
 ```
 apiKey:         (none — required)
+mode:             "product"
 baseUrl:        "https://api.altertable.ai"
 environment:    "production"
 release:        null
@@ -135,6 +141,15 @@ onError:        null
 debug:          false
 requestTimeout: 5000
 ```
+
+## Collection Modes
+
+| Mode | Wire behavior | State |
+| ---- | ------------- | ----- |
+| `product` | Omit the mode field; use the product endpoint requirements | Existing tier defaults |
+| `audience` | `mode: "audience"` on track records; omit identity and environment fields | Memory only; no persistent product state or cookie/credential caches |
+
+Use language-native enums or string literal types. A wrapper that does not expose this option must reject an untyped audience request before side effects; see [supported interfaces](SPEC.md#supported-interfaces).
 
 ## Tracking Consent States
 

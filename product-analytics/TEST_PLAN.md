@@ -123,3 +123,30 @@ Every SDK must implement these scenarios in its test suite. While implementation
     - `os.version`
     - `device.manufacturer` (if available)
     - `device.model` (if available)
+
+## 6. Audience Collection
+
+### Scenario: Public setup and wire policy
+- Initialize an audience client using its public API and an environment-bound key. Track single events and raw batches where supported, including legacy identity/environment fields and records whose mode conflicts with the client.
+- Observe final HTTP requests: only `mode`, `event`, `timestamp`, and `properties` are present; `mode` is always `audience`. Authentication uses the supplied key. Caller inputs remain unchanged.
+- Invoke identify, alias, and trait updates with identity values that product mode rejects. No request or identity mutation occurs. Product callers retain their original identity validation and behavior.
+- Use `audience_track_basic.json` and `audience_raw_batch.json` where their public interfaces apply. SDKs without a public timestamp argument should assert a valid current timestamp and compare the remaining fixture fields without introducing private clock hooks.
+
+### Scenario: Context reduction after hooks (Web/Mobile)
+- Supply credentialed URLs with queries/fragments, referrers with paths, viewport context, and safe business properties. Repeat via any public event transform and page/screen helper.
+- Final `$url` is origin plus path; `$referer` is origin only; `$viewport` and automatically expanded query parameters are absent. Invalid/non-string URLs become null. Nested business properties remain intact. Use `audience_urls.json` for representative URL cases.
+- Server SDKs: caller-supplied `$url`, `$referer`, and `$viewport` pass through unchanged.
+
+### Scenario: Product state isolation and lifecycle (Web/Mobile)
+- Seed product identity, consent, and queued events, then initialize audience mode with the same key and requested persistent/custom storage options.
+- Audience does not read or mutate those stores. Events wait in memory for pending/dismissed consent, are dropped on denial, and never replay in a new client. Mode changes fail before other runtime updates take effect. Returning to a new product client preserves its original stored state.
+- Pause a real or unavoidable external transport dependency while denial/disposal happens. Completion or retry of the old request must not restore cleared events or send later buffered audience events.
+
+### Scenario: Cookie and credential isolation (Web/Mobile)
+- Exercise public clients against an ephemeral real loopback HTTP server. Return Set-Cookie, then issue another event. Where redirects are supported, return a redirect with Set-Cookie and observe every hop. Where automatic retries are supported, return a retryable error before success.
+- Audience requests never send Cookie/Cookie2 or ambient user authorization; audience does not retain server cookies or modify the product cookie jar. Required API-key authentication remains. A product client retains its existing transport behavior.
+- Exercise caller-supplied session cookie/auth headers where the SDK supports session customization. Keep platform proxy/TLS behavior documented when audience isolation changes environment-derived settings.
+
+### Scenario: Unsupported wrappers fail before side effects
+- Through an untyped caller, pass audience or an unknown mode to a product-only wrapper. Observe no storage reads/writes, listeners, or HTTP requests before rejection.
+- Reject an invalid mode update without changing the current delivery/consent behavior; subsequent automatic product delivery still succeeds.

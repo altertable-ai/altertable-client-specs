@@ -1,0 +1,72 @@
+{
+  "description": "Audience raw batches cannot restore identity or select product mode; server SDKs leave caller properties unchanged",
+  "tier": "server",
+  "config": {
+    "mode": "audience"
+  },
+  "input": [
+    {
+      "mode": "product",
+      "event": "First",
+      "timestamp": "2026-11-09T10:00:00.000Z",
+      "distinct_id": "legacy-user",
+      "anonymous_id": "legacy-anonymous",
+      "device_id": "legacy-device",
+      "session_id": "legacy-session",
+      "environment": "ignored",
+      "properties": {
+        "$lib": "fixture-client",
+        "$lib_version": "1.0.0",
+        "section": "docs",
+        "environment": "business-value",
+        "$url": "https://user:password@example.com/docs?token=private#secret",
+        "$referer": "https://search.example/private?token=private#secret",
+        "$viewport": "1234x987",
+        "$release": "fixture-release"
+      }
+    },
+    {
+      "mode": "audience",
+      "event": "Second",
+      "timestamp": "2026-11-09T10:00:00.000Z",
+      "properties": {
+        "$lib": "fixture-client",
+        "$lib_version": "1.0.0",
+        "$url": "/relative?token=private",
+        "environment": "business-value",
+        "$release": "fixture-release"
+      }
+    }
+  ],
+  "output": {
+    "payloads": [
+      {
+        "mode": "audience",
+        "event": "First",
+        "timestamp": "2026-11-09T10:00:00.000Z",
+        "properties": {
+          "$lib": "fixture-client",
+          "$lib_version": "1.0.0",
+          "section": "docs",
+          "environment": "business-value",
+          "$url": "https://user:password@example.com/docs?token=private#secret",
+          "$referer": "https://search.example/private?token=private#secret",
+          "$viewport": "1234x987",
+          "$release": "fixture-release"
+        }
+      },
+      {
+        "mode": "audience",
+        "event": "Second",
+        "timestamp": "2026-11-09T10:00:00.000Z",
+        "properties": {
+          "$lib": "fixture-client",
+          "$lib_version": "1.0.0",
+          "$url": "/relative?token=private",
+          "environment": "business-value",
+          "$release": "fixture-release"
+        }
+      }
+    ]
+  }
+}
