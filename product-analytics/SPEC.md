@@ -70,15 +70,19 @@ The client owns the mode. Per-event options, raw batch dictionaries, and caller 
 
 Do not read, hydrate, migrate, write, or clear persistent product identity, consent, or event stores from an audience client. Override persistence settings with memory-only state, including custom storage adapters. Unsent audience events do not survive client disposal or an app/page restart. Internal ephemeral state must never become wire identity.
 
-Audience transports must not store or replay response cookies, share cookie or user-credential caches with product clients, or attach ambient credentials. Enforce this on normal sends, retries, and each redirect or exit delivery that the platform supports. Browser requests use `credentials: "omit"` and `referrerPolicy: "no-referrer"`; avoid an exit transport that cannot honor those settings. Keep required API-key authentication. Preserve product transport behavior.
+**Web and mobile tiers only.** Audience transports must not store or replay response cookies, share cookie or user-credential caches with product clients, or attach ambient credentials, including on retries and redirects. Browser requests use `credentials: "omit"` and `referrerPolicy: "no-referrer"`. Keep API-key authentication and product transport behavior unchanged.
+
+**Server tier**: no transport changes. The server is not an end user's browser, so it holds no visitor cookies or ambient credentials to isolate.
 
 For web/mobile consent, pending and dismissed events wait only in memory. Denied consent discards buffered events and prevents delivery; granting consent may deliver the current in-memory buffer. A failed delivery must not reintroduce events that were cleared by denial or disposal. Supply consent on each new audience lifecycle rather than restoring product consent.
 
 ### Context and caller data
 
-Limit automatically added context to SDK metadata, optional application release, and page/screen context. Reduce `$url` to an absolute HTTP(S) origin plus path, with credentials, query, and fragment removed. Reduce `$referer` to origin only. Missing, non-string, relative, or unsupported URLs become null. Remove `$viewport` and do not expand URL query parameters into separate event properties.
+**Web and mobile tiers only.** Limit automatically added context to SDK metadata, optional application release, and page/screen context. Reduce `$url` to an absolute HTTP(S) origin plus path, with credentials, query, and fragment removed. Reduce `$referer` to origin only. Missing, non-string, relative, or unsupported URLs become null. Remove `$viewport` and do not expand URL query parameters into separate event properties. Do not attach automatic browser, OS, device, IP, or location details.
 
-Keep event names and custom properties, including nested fields named `environment`, caller-owned and unchanged except for these reserved context fields. Do not attach automatic browser, OS, device, IP, or location details. Event names, custom properties, and URL paths can contain personal data; callers must choose or sanitize them accordingly. Server SDK requests describe the server's HTTP context, not an end user's browser or unique visitor identity.
+**Server tier**: the SDK adds no page context, so it does not rewrite `$url`, `$referer`, or other caller properties. Server requests describe the server's HTTP context, not an end user's browser or unique visitor.
+
+All tiers keep event names and custom properties, including nested fields named `environment`, caller-owned and unchanged except for the reserved context fields above. Event names, custom properties, and URL paths can contain personal data; callers must choose or sanitize them accordingly.
 
 ### Supported interfaces
 

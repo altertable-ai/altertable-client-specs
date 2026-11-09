@@ -27,6 +27,6 @@ For batch-flush fixtures, assert the sequence of endpoint requests, each request
 | :--- | :--- |
 | `audience_track_basic.json` | Public audience track with reserved context reduction and retained business properties. |
 | `audience_raw_batch.json` | Server raw batch with conflicting modes and legacy identity fields. |
-| `audience_urls.json` | Representative URL/referrer inputs and final values. |
+| `audience_urls.json` | Representative URL/referrer inputs and final values (web/mobile only). |
 
 Apply each fixture through the SDK's public client. Supply its timestamp where the public API accepts one; otherwise assert a valid current timestamp and compare the remaining fields. Use real loopback HTTP for cookie/redirect behavior as described in the test plan. Wrappers without audience support must reject the option before side effects rather than run these as supported-mode fixtures.
